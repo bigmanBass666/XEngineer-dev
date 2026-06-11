@@ -1,119 +1,153 @@
-# XEngineer 可用模型筛选结果
+# XEngineer 模型清单（最终版）
 
-> 来源: nvidia-models-overview.md (NVIDIA NIM)
-> 筛选时间: 2026-06-12
-> API Base URL: https://integrate.api.nvidia.com/v1
-> 认证: Authorization: Bearer <NVIDIA_API_KEY>
-> 兼容: OpenAI Chat Completions API 格式
-> 费用: 全部 Free，按调用次数限额
+> 优先级：Agnes 优先 → Agnes 做不到的用 NVIDIA NIM
+> 更新时间: 2026-06-12
 
 ---
 
-## 一、LLM（文本对话）
+## 一、Agnes AI（优先使用）
 
-### 主力推荐
-| 模型 | 免费额度 | 用途 |
-|------|----------|------|
-| `nvidia/nemotron-3-super-120b-a12b` | 60.41M | 主力对话（额度最高，120B级能力） |
-| `deepseek-ai/deepseek-v4-flash` | 15.16M | 推理任务（速度快） |
-| `meta/llama-3.3-70b-instruct` | 18.79M | 通用对话（生态成熟） |
+### 1. Text — agnes-2.0-flash
 
-### 轻量/路由
-| 模型 | 免费额度 | 用途 |
-|------|----------|------|
-| `meta/llama-3_1-8b-instruct` | 25.09M | 低延迟分类/预处理 |
-| `nvidia/nemotron-3-nano-30b-a3b` | 11.91M | 极速场景 |
+| 项目 | 详情 |
+|------|------|
+| Endpoint | `https://apihub.agnes-ai.com/v1/chat/completions` |
+| 认证 | `Authorization: Bearer <AGNES_API_KEY>` |
+| 兼容 | OpenAI Chat Completions API |
+| 上下文 | 256K tokens |
+| 最大输出 | 65.5K tokens |
+| 价格 | **免费** |
 
-### 特殊
-| 模型 | 免费额度 | 用途 |
-|------|----------|------|
-| `nvidia/nemotron-voicechat` | - | **语音对话专用**（实时语音交互） |
+**核心能力：**
+- ✅ 文本对话（多轮、system prompt、流式输出）
+- ✅ 图片理解（通过 image_url 输入公网图片URL）
+- ✅ 工具调用（function calling）
+- ✅ Thinking模式（代码/推理任务）
+- ✅ JSON结构化输出
 
----
+**局限：**
+- ❌ 不支持 base64 图片输入（仅公网URL）
+- ❌ 不支持视频流理解
+- ❌ 不支持 ASR/TTS
 
-## 二、ASR（语音识别）
-
-### 首选
-| 模型 | 语言 | 特性 | 适合实时？ |
-|------|------|------|-----------|
-| `nvidia/nemotron-asr-streaming` | 英语 | **唯一流式模型**，WebSocket逐帧 | ✅ 实时首选 |
-| `nvidia/parakeet-ctc-0_6b-zh-cn` | 中文+英语 | 0.6B轻量，record-setting准确率 | ⚠️ 非流式，需VAD分段 |
-| `openai/whisper-large-v3` | 99+语言 | 鲁棒性最强，抗噪 | ❌ 延迟高，仅离线 |
-
-### 中文实时方案
-中文无流式ASR，需用 parakeet-ctc-0_6b-zh-cn + VAD分段 + 批量送入。
+**Hackathon用途：**
+- 题目一：LLM对话核心 + 摄像头截图发送image_url做视觉理解
+- 题目二：语音指令 → 文本后的指令解析 + Canvas绘图JSON生成
 
 ---
 
-## 三、TTS（语音合成）
+### 2. Image — agnes-image-2.1-flash
 
-### 首选
-| 模型 | 特性 | 免费额度 | 适合实时？ |
-|------|------|----------|-----------|
-| `nvidia/magpie-tts-multilingual` | 多语言，自然音色，支持Download | 117K | ✅ **综合首选** |
-| `nvidia/magpie-tts-zeroshot` | 零样本音色克隆（几秒音频克隆） | - | ✅ 个性化场景 |
-| `resembleai/chatterbox-multilingual-tts` | 23语言，自然有表现力 | 7.21K | ✅ 备选 |
+| 项目 | 详情 |
+|------|------|
+| Endpoint | `https://apihub.agnes-ai.com/v1/images/generations` |
+| 认证 | `Authorization: Bearer <AGNES_API_KEY>` |
+| 输出格式 | URL 或 Base64（通过 extra_body.response_format） |
+| 价格 | **免费** |
+
+**核心能力：**
+- ✅ 文生图
+- ✅ 图生图（image数组传入URL或Data URI Base64）
+- ✅ 高信息密度图像优化
+- ✅ 自定义尺寸
+
+**注意点：**
+- `response_format` 必须放在 `extra_body` 里，不能放顶层
+- 图生图不需要 `tags: ["img2img"]`
+- 超时建议 60-360s
+
+**Hackathon用途：**
+- 题目二：AI生图增强（语音描述 → prompt → 图片）
 
 ---
 
-## 四、VLM（视觉理解）
+### 3. Video — agnes-video-v2.0
 
-### 可用模型
-| 模型 | 厂商 | 参数量 | 特性 |
+| 项目 | 详情 |
+|------|------|
+| Endpoint | `https://apihub.agnes-ai.com/v1/videos` (创建) |
+| 查询 | `https://apihub.agnes-ai.com/agnesapi?video_id=<ID>` (推荐) |
+| 模式 | 异步任务（创建 → 轮询 → 获取URL） |
+| 最大帧数 | 441帧（8n+1） |
+| 帧率 | 1-60 FPS |
+| 价格 | **免费** |
+
+**核心能力：**
+- ✅ 文生视频
+- ✅ 图生视频
+- ✅ 多图视频生成
+- ✅ 关键帧动画
+
+**Hackathon用途：**
+- 两道题核心功能都不涉及视频生成
+- 可用于制作demo视频素材（非必须）
+
+---
+
+## 二、NVIDIA NIM（Agnes覆盖不到的补充）
+
+### API通用信息
+
+| 项目 | 详情 |
+|------|------|
+| Base URL | `https://integrate.api.nvidia.com/v1` |
+| 认证 | `Authorization: Bearer <NVIDIA_API_KEY>` |
+| 兼容 | OpenAI Chat Completions API |
+| 费用 | **全部免费**，按调用次数限额 |
+
+### 4. ASR（语音识别）— Agnes没有，必须用NVIDIA
+
+| 模型 | 语言 | 实时？ | 用途 |
 |------|------|--------|------|
-| `meta/llama-3.2-90b-vision-instruct` | Meta | 90B | **旗舰VLM**，视觉对话首选 |
-| `meta/llama-3.2-11b-vision-instruct` | Meta | 11B | 轻量VLM，延迟低 |
-| `nvidia/nemotron-nano-12b-v2-vl` | NVIDIA | 12B | Nemotron视觉版 |
-| `nvidia/llama-3.1-nemotron-nano-vl-8b-v1` | NVIDIA | 8B | 纳米VLM |
-| `microsoft/phi-4-multimodal-instruct` | Microsoft | - | Phi-4多模态 |
-| `google/google-paligemma` | Google | - | 专用视觉理解 |
-| `nvidia/nemotron-parse` | NVIDIA | - | 文档解析VLM（非通用） |
+| `nvidia/nemotron-asr-streaming` | 英语 | ✅ 流式 | 英文实时对话 |
+| `nvidia/parakeet-ctc-0_6b-zh-cn` | 中文+英语 | ❌ 批量 | **中文首选**（需VAD分段） |
+| `openai/whisper-large-v3` | 99+语言 | ❌ 批量 | 兜底备选 |
 
-> ⚠️ Qwen在NIM上无VLM模型。OpenAI在NIM上无GPT-4V。
+### 5. TTS（语音合成）— Agnes没有，必须用NVIDIA
 
----
+| 模型 | 语言 | 实时？ | 用途 |
+|------|------|--------|------|
+| `nvidia/magpie-tts-multilingual` | 多语言 | ✅ | **综合首选**（117K免费额度） |
+| `nvidia/magpie-tts-zeroshot` | 多语言 | ✅ | 零样本音色克隆 |
+| `resembleai/chatterbox-multilingual-tts` | 23语言 | ✅ | 备选 |
 
-## 五、图像生成
+### 6. VLM（视觉理解）— Agnes的图片理解仅限URL，视频流需NVIDIA
 
-### 首选
-| 模型 | 特性 | 适合实时？ | 免费额度 |
-|------|------|-----------|----------|
-| `black-forest-labs/flux_1-schnell` | 速度+质量平衡 | ✅ | 253K |
-| `black-forest-labs/flux_1-dev` | SOTA画质 | ❌ | 246K |
-| `black-forest-labs/flux_2-klein-4b` | 4B轻量，极速生成+编辑 | ✅ | 271K |
-| `qwen/qwen-image` | 多语言文字渲染 | ⚠️ | - |
+| 模型 | 厂商 | 用途 |
+|------|------|------|
+| `meta/llama-3.2-90b-vision-instruct` | Meta | **旗舰VLM**，视频帧理解首选 |
+| `nvidia/nemotron-nano-12b-v2-vl` | NVIDIA | 轻量VLM备选 |
 
----
+> 注意：Agnes Text 的 image_url 能力可以覆盖静态图片理解场景。
+> 只有需要理解视频帧流时才需要NVIDIA VLM。
 
-## 六、语音翻译（可选）
+### 7. LLM（额外补充）— Agnes Text已够用，以下为备选
 
-| 模型 | 语言 | 免费额度 | 用途 |
-|------|------|----------|------|
-| `nvidia/riva-translate-4b-instruct-v1_1` | 12语言 | 282K | 跨语言对话中间环节 |
-| `nvidia/riva-translate-1_6b` | 36语言 | - | 轻量备选 |
+| 模型 | 免费额度 | 用途 |
+|------|----------|------|
+| `nvidia/nemotron-3-super-120b-a12b` | 60.41M | 备用主力（额度最高） |
+| `deepseek-ai/deepseek-v4-flash` | 15.16M | 推理任务备用 |
 
 ---
 
-## 七、关键发现
+## 三、按题目映射
 
-### 对题目一（AI视觉对话助手）的覆盖度
-| 环节 | 方案 | 覆盖度 |
-|------|------|--------|
-| 语音识别 | parakeet-ctc-0_6b-zh-cn（中文） / nemotron-asr-streaming（英文） | ✅ |
-| 视觉理解 | llama-3.2-90b-vision-instruct / nemotron-nano-12b-v2-vl | ✅ |
-| 文本对话 | nemotron-3-super-120b-a12b / deepseek-v4-flash | ✅ |
-| 语音合成 | magpie-tts-multilingual | ✅ |
-| **结论** | NVIDIA NIM 全链路覆盖 | ✅✅✅ |
+### 题目一：AI 视觉对话助手
 
-### 对题目二（AI语音绘图工具）的覆盖度
-| 环节 | 方案 | 覆盖度 |
-|------|------|--------|
-| 语音识别 | parakeet-ctc-0_6b-zh-cn / nemotron-asr-streaming | ✅ |
-| 指令解析 | nemotron-3-super-120b-a12b（LLM解析语音→绘图指令） | ✅ |
-| Canvas绘图 | 纯前端实现，不需要模型 | ✅ |
-| AI生图（可选增强） | flux_1-schnell / flux_2-klein-4b | ✅ |
-| **结论** | 全链路覆盖，且依赖更少 | ✅✅✅ |
+| 环节 | 首选方案 | 备选方案 | 来源 |
+|------|---------|---------|------|
+| 语音→文字(中文) | parakeet-ctc-0_6b-zh-cn | whisper-large-v3 | NVIDIA |
+| 语音→文字(英文) | nemotron-asr-streaming | parakeet-ctc-0_6b-zh-cn | NVIDIA |
+| 视觉理解(图片) | **agnes-2.0-flash (image_url)** | llama-3.2-90b-vision | Agnes → NVIDIA |
+| 视觉理解(视频帧) | llama-3.2-90b-vision | nemotron-nano-12b-v2-vl | NVIDIA |
+| 文本对话 | **agnes-2.0-flash** | nemotron-3-super-120b | Agnes → NVIDIA |
+| 文字→语音 | magpie-tts-multilingual | magpie-tts-zeroshot | NVIDIA |
 
-### 特别关注
-- `nvidia/nemotron-voicechat`：**语音对话专用模型**，可能直接覆盖题目一的核心需求，需进一步调研
-- 中文ASR无流式支持，这是题目一最大的技术挑战
+### 题目二：AI 语音绘图工具
+
+| 环节 | 首选方案 | 备选方案 | 来源 |
+|------|---------|---------|------|
+| 语音→文字(中文) | parakeet-ctc-0_6b-zh-cn | whisper-large-v3 | NVIDIA |
+| 指令解析 | **agnes-2.0-flash** | nemotron-3-super-120b | Agnes → NVIDIA |
+| Canvas绘图 | 纯前端 | — | 无需模型 |
+| AI生图增强 | **agnes-image-2.1-flash** | flux_1-schnell | Agnes → NVIDIA |
