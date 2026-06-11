@@ -97,7 +97,7 @@
 | Base URL | `https://integrate.api.nvidia.com/v1` |
 | 认证 | `Authorization: Bearer <NVIDIA_API_KEY>` |
 | 兼容 | OpenAI Chat Completions API |
-| 费用 | **全部免费**，按调用次数限额 |
+| 费用 | **全部免费**，速率限制 40 次/分钟 |
 
 ### 4. ASR（语音识别）— Agnes没有，必须用NVIDIA
 
@@ -129,7 +129,7 @@
 
 | 模型 | 参数量 | 免费额度 | 说明 |
 |------|--------|----------|------|
-| `nvidia/nemotron-voicechat` | 12B | 1.77K calls | 端到端全双工 speech-to-speech |
+| `nvidia/nemotron-voicechat` | 12B | 端到端全双工 speech-to-speech |
 
 **核心能力：**
 - ✅ 端到端：一次API调用完成 ASR → LLM推理 → TTS
@@ -138,14 +138,14 @@
 - ✅ 内置语音模型，无需单独搭配 ASR + TTS
 
 **局限：**
-- ❌ 免费额度极少（仅 1770 calls），Demo可用但不适合持续使用
 - ❌ 不支持视觉输入（无法做题目一的摄像头理解）
 - ❌ 无法替代 Agnes Text 的 function calling / JSON输出等高级能力
+- ❌ 速率限制 40 次/分钟（所有NVIDIA模型统一）
 - 官方 Blueprint: [NVIDIA-AI-Blueprints/nemotron-voice-agent](https://github.com/NVIDIA-AI-Blueprints/nemotron-voice-agent)
 
 **Hackathon用途：**
-- 可作为题目一的**快速原型方案**，验证全双工语音体验
-- 正式方案仍建议 Agnes Text + NVIDIA ASR/TTS 组合，额度更充足且功能更灵活
+- 题目一的核心语音通道方案，直接提供全双工语音对话体验
+- 注意：它本身不包含视觉理解，需要与 Agnes Text 的图片理解能力配合使用
 
 ### 8. LLM（额外补充）— Agnes Text已够用，以下为备选
 
@@ -168,7 +168,7 @@
 | 视觉理解(视频帧) | llama-3.2-90b-vision | nemotron-nano-12b-v2-vl | NVIDIA |
 | 文本对话 | **agnes-2.0-flash** | nemotron-3-super-120b | Agnes → NVIDIA |
 | 文字→语音 | magpie-tts-multilingual | magpie-tts-zeroshot | NVIDIA |
-| 全双工语音(快速原型) | nemotron-voicechat (1770次) | — | NVIDIA（可选） |
+| 全双工语音对话 | nemotron-voicechat | Agnes Text+ASR+TTS拼装 | NVIDIA → 混合 |
 
 ### 题目二：AI 语音绘图工具
 
