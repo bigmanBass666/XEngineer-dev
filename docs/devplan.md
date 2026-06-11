@@ -70,18 +70,20 @@
 
 > 测试时间: 2026-06-12
 
-| 模型 | 端点 | 状态 | 备注 |
-|------|------|------|------|
-| Agnes Text (agnes-2.0-flash) | `apihub.agnes-ai.com/v1/chat/completions` | ✅ 正常 | 响应正常，支持流式 |
-| Agnes Image (agnes-image-2.1-flash) | `apihub.agnes-ai.com/v1/images/generations` | ✅ 正常 | 返回图片URL，约3秒 |
-| Agnes Video (agnes-video-v2.0) | `apihub.agnes-ai.com/v1/videos` | ✅ 正常 | 创建成功，异步轮询获取 |
-| NVIDIA Chat (nemotron-3-super-120b) | z-ai SDK 代理 | ✅ 正常 | 通过Z.ai内部代理调用 |
-| NVIDIA TTS | z-ai CLI | ✅ 正常 | 中文TTS测试通过 |
-| NVIDIA ASR | z-ai CLI | ✅ 正常 | 中文ASR测试通过，识别准确 |
+| 模型 | 端点 | 状态 | Netlify可用？ | 备注 |
+|------|------|------|-------------|------|
+| Agnes Text (agnes-2.0-flash) | `apihub.agnes-ai.com/v1/chat/completions` | ✅ 正常 | ✅ | 公网端点，有key就能用 |
+| Agnes Image (agnes-image-2.1-flash) | `apihub.agnes-ai.com/v1/images/generations` | ✅ 正常 | ✅ | 公网端点，~3秒出图 |
+| Agnes Video (agnes-video-v2.0) | `apihub.agnes-ai.com/v1/videos` | ✅ 正常 | ✅ | 公网端点，异步轮询 |
+| NVIDIA LLM (nemotron-3-super) | `integrate.api.nvidia.com/v1` | ✅ 正常 | ✅ | 公网端点，有key能用 |
+| NVIDIA ASR/TTS/voicechat | `integrate.api.nvidia.com` | ❌ 不可用 | ❌ | 托管API上**没有语音模型** |
 
-> **重要发现：** z-ai-web-dev-sdk 内置了TTS和ASR的CLI工具（`z-ai tts` / `z-ai asr`），底层走Z.ai内部代理转发到NVIDIA，无需单独的NVIDIA API key。ASR中文识别测试结果准确（"你好，这是一个测试" → "你好，这是一个测试。"）。
+> **关键发现：**
+> 1. NVIDIA NIM 托管 API（`integrate.api.nvidia.com`）只有120个模型，**全部是文本/视觉/嵌入类模型，语音模型(ASR/TTS/voicechat)均不在托管API上**
+> 2. `z-ai tts` / `z-ai asr` 走的是 Z.ai 内部代理（`internal-api.z.ai`），**仅开发环境可用，Netlify上不可用**
+> 3. Agnes 3个端点全部是公网可访问的，Netlify部署后可直接使用
 >
-> **待确认：** NVIDIA NIM是否需要独立的API key用于直接调用（如`parakeet-ctc-0_6b-zh-cn`等特定模型）。目前通过z-ai SDK的ASR/TTS已可正常工作。
+> **影响：** 语音模型(ASR/TTS)需要寻找替代方案。见下方"ASR/TTS技术路线"讨论。
 
 ### 1. 产品设计 ✅
 - [x] 目标用户：创作者/通用用户
