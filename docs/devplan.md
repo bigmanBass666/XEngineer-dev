@@ -76,14 +76,16 @@
 | Agnes Image (agnes-image-2.1-flash) | `apihub.agnes-ai.com/v1/images/generations` | ✅ 正常 | ✅ | 公网端点，~3秒出图 |
 | Agnes Video (agnes-video-v2.0) | `apihub.agnes-ai.com/v1/videos` | ✅ 正常 | ✅ | 公网端点，异步轮询 |
 | NVIDIA LLM (nemotron-3-super) | `integrate.api.nvidia.com/v1` | ✅ 正常 | ✅ | 公网端点，有key能用 |
-| NVIDIA ASR/TTS/voicechat | `integrate.api.nvidia.com` | ❌ 不可用 | ❌ | 托管API上**没有语音模型** |
+| NVIDIA ASR/TTS/voicechat | N/A | ❌ 不可用 | ❌ | 需本地Docker+GPU部署，非云端API |
 
-> **关键发现：**
-> 1. NVIDIA NIM 托管 API（`integrate.api.nvidia.com`）只有120个模型，**全部是文本/视觉/嵌入类模型，语音模型(ASR/TTS/voicechat)均不在托管API上**
-> 2. `z-ai tts` / `z-ai asr` 走的是 Z.ai 内部代理（`internal-api.z.ai`），**仅开发环境可用，Netlify上不可用**
-> 3. Agnes 3个端点全部是公网可访问的，Netlify部署后可直接使用
+> **关键发现（已全面验证）：**
+> 1. NVIDIA NIM 托管 API（`integrate.api.nvidia.com`）只有120个文本/视觉/嵌入模型，**语音模型均不在托管API上**
+> 2. `nemotron-voicechat` 是一个需要**本地Docker部署 + 2张GPU(共128GB+ VRAM)**的模型，不是云端HTTP API
+> 3. `z-ai tts` / `z-ai asr` 走Z.ai内部代理（`internal-api.z.ai`），仅开发环境可用，Netlify不可用
+> 4. Agnes 3个端点全部公网可访问，Netlify部署后可直接使用
 >
-> **影响：** 语音模型(ASR/TTS)需要寻找替代方案。见下方"ASR/TTS技术路线"讨论。
+> **结论：NVIDIA语音能力（ASR/TTS/voicechat）在Netlify部署场景下完全不可用。**
+> **需要替代方案：浏览器原生 Web Speech API 或其他云端ASR/TTS服务。**
 
 ### 1. 产品设计 ✅
 - [x] 目标用户：创作者/通用用户
