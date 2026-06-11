@@ -20,18 +20,22 @@
 
 **核心能力：**
 - ✅ 文本对话（多轮、system prompt、流式输出）
-- ✅ 图片理解（通过 image_url 输入公网图片URL）
+- ✅ 图片理解（支持 **公网URL** 和 **base64 data URI** 两种输入方式）
 - ✅ 工具调用（function calling）
 - ✅ Thinking模式（代码/推理任务）
 - ✅ JSON结构化输出
 
+**图片输入方式：**
+- 公网URL：`{"type": "image_url", "image_url": {"url": "https://example.com/img.jpg"}}`
+- Base64 Data URI：`{"type": "image_url", "image_url": {"url": "data:image/png;base64,..."}}`
+- 两种方式均通过 `image_url` type 传入，区别在 `url` 字段的值
+
 **局限：**
-- ❌ 不支持 base64 图片输入（仅公网URL）
 - ❌ 不支持视频流理解
 - ❌ 不支持 ASR/TTS
 
 **Hackathon用途：**
-- 题目一：LLM对话核心 + 摄像头截图发送image_url做视觉理解
+- 题目一：LLM对话核心 + 摄像头截图转base64做**实时视觉理解**（无需公网URL）
 - 题目二：语音指令 → 文本后的指令解析 + Canvas绘图JSON生成
 
 ---
@@ -121,7 +125,29 @@
 > 注意：Agnes Text 的 image_url 能力可以覆盖静态图片理解场景。
 > 只有需要理解视频帧流时才需要NVIDIA VLM。
 
-### 7. LLM（额外补充）— Agnes Text已够用，以下为备选
+### 7. VoiceChat（全双工语音对话）— 一体化备选方案
+
+| 模型 | 参数量 | 免费额度 | 说明 |
+|------|--------|----------|------|
+| `nvidia/nemotron-voicechat` | 12B | 1.77K calls | 端到端全双工 speech-to-speech |
+
+**核心能力：**
+- ✅ 端到端：一次API调用完成 ASR → LLM推理 → TTS
+- ✅ 全双工：可同时听和说，支持打断
+- ✅ 流式：低延迟实时对话体验
+- ✅ 内置语音模型，无需单独搭配 ASR + TTS
+
+**局限：**
+- ❌ 免费额度极少（仅 1770 calls），Demo可用但不适合持续使用
+- ❌ 不支持视觉输入（无法做题目一的摄像头理解）
+- ❌ 无法替代 Agnes Text 的 function calling / JSON输出等高级能力
+- 官方 Blueprint: [NVIDIA-AI-Blueprints/nemotron-voice-agent](https://github.com/NVIDIA-AI-Blueprints/nemotron-voice-agent)
+
+**Hackathon用途：**
+- 可作为题目一的**快速原型方案**，验证全双工语音体验
+- 正式方案仍建议 Agnes Text + NVIDIA ASR/TTS 组合，额度更充足且功能更灵活
+
+### 8. LLM（额外补充）— Agnes Text已够用，以下为备选
 
 | 模型 | 免费额度 | 用途 |
 |------|----------|------|
@@ -138,10 +164,11 @@
 |------|---------|---------|------|
 | 语音→文字(中文) | parakeet-ctc-0_6b-zh-cn | whisper-large-v3 | NVIDIA |
 | 语音→文字(英文) | nemotron-asr-streaming | parakeet-ctc-0_6b-zh-cn | NVIDIA |
-| 视觉理解(图片) | **agnes-2.0-flash (image_url)** | llama-3.2-90b-vision | Agnes → NVIDIA |
+| 视觉理解(图片) | **agnes-2.0-flash (URL+base64)** | llama-3.2-90b-vision | Agnes → NVIDIA |
 | 视觉理解(视频帧) | llama-3.2-90b-vision | nemotron-nano-12b-v2-vl | NVIDIA |
 | 文本对话 | **agnes-2.0-flash** | nemotron-3-super-120b | Agnes → NVIDIA |
 | 文字→语音 | magpie-tts-multilingual | magpie-tts-zeroshot | NVIDIA |
+| 全双工语音(快速原型) | nemotron-voicechat (1770次) | — | NVIDIA（可选） |
 
 ### 题目二：AI 语音绘图工具
 
