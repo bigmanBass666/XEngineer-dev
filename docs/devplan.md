@@ -77,15 +77,19 @@
 | Agnes Video (agnes-video-v2.0) | `apihub.agnes-ai.com/v1/videos` | ✅ 正常 | ✅ | 公网端点，异步轮询 |
 | NVIDIA LLM (nemotron-3-super) | `integrate.api.nvidia.com/v1` | ✅ 正常 | ✅ | 公网端点，有key能用 |
 | NVIDIA ASR/TTS/voicechat | N/A | ❌ 不可用 | ❌ | 需本地Docker+GPU部署，非云端API |
+| 火山引擎 流式ASR (bigmodel_async) | `wss://openspeech.bytedance.com` | ✅ 待测 | ⚠️ | 需WebSocket代理或直连 |
 
 > **关键发现（已全面验证）：**
 > 1. NVIDIA NIM 托管 API（`integrate.api.nvidia.com`）只有120个文本/视觉/嵌入模型，**语音模型均不在托管API上**
-> 2. `nemotron-voicechat` 是一个需要**本地Docker部署 + 2张GPU(共128GB+ VRAM)**的模型，不是云端HTTP API
+> 2. `nemotron-voicechat` 需**本地Docker部署 + 2张GPU(共128GB+ VRAM)**，不是云端HTTP API
 > 3. `z-ai tts` / `z-ai asr` 走Z.ai内部代理（`internal-api.z.ai`），仅开发环境可用，Netlify不可用
 > 4. Agnes 3个端点全部公网可访问，Netlify部署后可直接使用
+> 5. **火山引擎流式ASR** — 云端WebSocket API，支持中文实时识别，**bigmodel_async模式**首字延迟低、支持VAD分句+热词，完美匹配语音绘图场景
 >
-> **结论：NVIDIA语音能力（ASR/TTS/voicechat）在Netlify部署场景下完全不可用。**
-> **需要替代方案：浏览器原生 Web Speech API 或其他云端ASR/TTS服务。**
+> **ASR方案确定：火山引擎 bigmodel_async（双向流式优化版）**
+> - 模式：WebSocket二进制流式，200ms分包，VAD 800ms判停
+> - 优势：低延迟、支持热词（绘图术语）、支持二遍识别（快+准）
+> - 详见 `docs/api/Volcengine-ASR-Streaming.md`
 
 ### 1. 产品设计 ✅
 - [x] 目标用户：创作者/通用用户
