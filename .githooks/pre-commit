@@ -11,7 +11,7 @@ if [[ " ${PROTECTED_BRANCHES[*]} " == *" ${BRANCH} "* ]]; then
     echo "请使用 PR 工作流："
     echo "  1. git checkout -b feature/你的功能名"
     echo "  2. 修改代码 + commit"
-    echo "  3. git push dev feature/你的功能名"
+    echo "  3. git push origin feature/你的功能名"
     echo "  4. 在 GitHub 创建 PR → Review → Merge"
     echo ""
     echo "参考：docs/competition-rules.md §PR提交规范"

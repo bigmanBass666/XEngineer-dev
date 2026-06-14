@@ -12,5 +12,5 @@ if [[ " ${PROTECTED_BRANCHES[*]} " == *" ${BRANCH} "* ]]; then
 fi
 
 echo "✅ Commit 成功（分支: ${BRANCH}）"
-echo "💡 提醒：完成后请 push 到 dev remote 并创建 PR"
-echo "   git push dev ${BRANCH} -u"
+echo "💡 提醒：完成后请 push 到远程并创建 PR"
+echo "   git push origin ${BRANCH} -u"
