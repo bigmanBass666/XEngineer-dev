@@ -1,0 +1,20 @@
+- [ ] 后端项目骨架创建完成：FastAPI 入口、WebSocket 端点、配置管理、Pipeline 基类和编排器骨架就绪
+- [ ] 前端项目骨架创建完成：Vite + React + TS + TailwindCSS 初始化，基础布局和 WebSocket hook 就绪
+- [ ] 前后端 WebSocket 连通：能收发 JSON 消息，连接状态 UI 显示正确
+- [ ] 火山 ASR API 连通：二进制协议客户端实现，能返回 interim 和 final 识别结果
+- [ ] Agnes Text API 连通：多模态（文本+base64图片）SSE 流式调用成功
+- [ ] 火山 TTS API 连通：HTTP 接口调用成功，能返回 MP3 音频数据
+- [ ] 前端麦克风采集功能正常：AudioWorklet 采集 16kHz mono PCM 数据
+- [ ] 前端 VAD 检测功能正常：能量阈值算法能正确检测 speaking/silence 状态切换
+- [ ] 前端摄像头预览正常：getUserMedia 获取摄像头画面并显示
+- [ ] 前端 Canvas 截图功能正常：VAD 触发截图生成 base64 JPEG（640×480, quality 0.6）
+- [ ] 前端画面变化检测正常：hash 对比，静止画面不重复发送
+- [ ] 后端 ASR Node 完整实现：前端音频 → 火山 ASR → 文本结果全链路通畅
+- [ ] 后端 VLM+LLM Node 完整实现：文本+图片 → Agnes → 流式文本响应
+- [ ] 后端 TTS Node 完整实现：文本 → 火山 TTS → 音频 chunk 推送
+- [ ] Pipeline 编排器串联成功：ASR → VLM+LLM → TTS 端到端跑通
+- [ ] 对话 UI 界面完整：聊天气泡、流式文字显示、状态指示器均正常工作
+- [ ] 前端 TTS 音频播放器正常：Web Audio API 解码播放 tts_audio chunk，流畅无卡顿
+- [ ] Barge-in 打断机制正常：AI 播放期间用户插话能立即停止播放并清空队列
+- [ ] 多轮对话上下文管理正常：保留最近 5 轮对话历史，图片只保留最新帧
+- [ ] 自适应帧选择策略正常：VAD 触发截图 + 画面 hash 去重均生效
