@@ -3,134 +3,12 @@
 > 状态：**讨论中，持续更新**
 > 最后更新：2026-06-15
 > 目标：建立「测试 → 发现问题 → 修复 → 再测试」的自动化闭环，覆盖视觉对话完整链路
-> 前置依赖：Phase 0（Git 规范强制执行机制）
 
 ---
 
-## Phase 0：从根源解决 Git/PR 规范违规
+## Phase 0：Git/PR 规范强制执行 ✅ 已完成
 
-### 为什么之前没有遵循 PR 规范？
-
-**不是"忘了"，而是项目机制在主动破坏规范。** 具体根因：
-
-| 根因 | 证据 | 后果 |
-|------|------|------|
-| **① post-commit hook 自动 `git push origin main`** | `.githooks/post-commit` 原始内容：commit 后立即注入 token、push main、失败重试 | 每次 commit 直接上 main，**完全绕开 PR 流程** |
-| **② 没有 pre-push hook 拦截直接推 main** | `.githooks/` 只有 post-commit，没有 pre-push | 没有任何机制阻止直接推 main |
-| **③ 规则文档没有被工作流强制执行** | `docs/competition-rules.md` 存在，但读不读没有区别 | 约束是"软"的，违反无成本 |
-| **④ 我没有"先读约束再动手"的步骤** | 拿到任务直接写代码、直接 push | 缺少结构化的前置检查 |
-
-**一句话：git hooks 在主动破坏 PR 规范，而没有任何机制在保护它。**
-
-### 解决方案：让违规变得不可能（而非依赖记忆）
-
-#### 改动 1：重写 `.githooks/post-commit`
-
-**当前**（已锁定为注释）：`# LOCKED - 比赛已截止，禁止提交`
-**原始**（问题根源）：
-
-```bash
-# 当前 hook 做的事：
-git push origin main  # ← 直接推 main，绕开 PR！
-```
-
-**改为**：
-
-```bash
-#!/bin/bash
-# Post-commit hook: 阻止直接推 main，强制 PR 工作流
-
-BRANCH=$(git rev-parse --abbrev-ref HEAD)
-PROTECTED_BRANCHES=("main" "master")
-
-if [[ " ${PROTECTED_BRANCHES[*]} " == *" ${BRANCH} "* ]]; then
-    echo "❌ 错误：不能直接 commit 到 ${BRANCH} 分支"
-    echo ""
-    echo "请使用 PR 工作流："
-    echo "  1. git checkout -b feature/你的功能名"
-    echo "  2. 修改代码 + commit"
-    echo "  3. git push dev feature/你的功能名"
-    echo "  4. 在 GitHub 创建 PR → Review → Merge"
-    echo ""
-    echo "参考：docs/competition-rules.md §PR提交规范"
-    # 撤销本次 commit（保留暂存区）
-    git reset --soft HEAD~1
-    exit 1
-fi
-
-echo "✅ Commit 成功（分支: ${BRANCH}）"
-echo "💡 提醒：完成后请 push 到 dev remote 并创建 PR"
-echo "   git push dev ${BRANCH} -u"
-```
-
-#### 改动 2：新增 `.githooks/pre-push`
-
-```bash
-#!/bin/bash
-# Pre-push hook: 阻止直接推送到 main/master 分支
-
-while read oldrev newrev refname; do
-    BRANCH=$(echo "$refname" | sed 's|refs/heads/||')
-    
-    if [ "$BRANCH" = "main" ] || [ "$BRANCH" = "master" ]; then
-        echo "❌ 错误：不能直接 push 到 ${BRANCH}"
-        echo ""
-        echo "请通过 GitHub PR 合并代码到 ${BRANCH}"
-        echo "  git push dev $(git rev-parse --abbrev-ref HEAD) -u"
-        echo "  然后在 GitHub 上创建 Pull Request"
-        exit 1
-    fi
-done
-
-exit 0
-```
-
-#### 改动 3：更新 `scripts/setup.sh`
-
-在 setup.sh 末尾增加规则提醒步骤：
-
-```bash
-# 11. 显示 PR 规范提醒
-echo ""
-echo "╔══════════════════════════════════════════════════╗"
-echo "║  ⚠️  Git 工作流提醒（比赛红线规则）               ║"
-echo "╠══════════════════════════════════════════════════╣"
-echo "║  ❌ 禁止直接 commit/push 到 main                  ║"
-echo "║  ✅ 必须：创建 feature 分支 → push → 创建 PR      ║"
-echo "║  ✅ PR 需包含：标题/功能描述/实现思路/测试方式    ║"
-echo "║  📖 完整规则：docs/competition-rules.md           ║"
-echo "╚══════════════════════════════════════════════════╝"
-```
-
-#### 改动 4：更新 `worklog.md` 开头
-
-在比赛规则摘录之前，增加操作员前置检查清单：
-
-```markdown
-## 操作员前置检查（每次会话开始时执行）
-
-- [ ] 读取 worklog.md 了解上次进度
-- [ ] 读取 docs/plans/ 下相关计划文件
-- [ ] 确认当前分支不是 main（如在 main 上，先切到 feature 分支）
-- [ ] 所有代码改动通过 PR 提交，不直接推 main
-```
-
-### Phase 0 PR 规划
-
-| PR | 标题 | 包含文件 |
-|----|------|---------|
-| PR-A | `fix: 重写 git hooks 强制 PR 工作流，禁止直接推 main` | `.githooks/post-commit`, `.githooks/pre-push` |
-| PR-B | `chore: setup.sh 增加 PR 规范提醒步骤` | `scripts/setup.sh` |
-| PR-C | `docs: worklog 增加操作员前置检查清单` | `worklog.md` |
-
-### Phase 0 验收
-
-| # | 验证项 | 验证方式 |
-|---|--------|---------|
-| 1 | 在 main 分支 commit 被拒绝 | `git commit` → 输出错误信息 + 自动 reset |
-| 2 | 直接 push main 被拒绝 | `git push dev main` → hook 拦截 |
-| 3 | feature 分支 commit 正常 | `git checkout -b feature/test && git commit` → 成功 |
-| 4 | setup.sh 显示 PR 提醒 | `bash scripts/setup.sh` → 输出提醒框 |
+已完成内容：pre-commit hook 阻止 main 分支 commit、pre-push hook 阻止直接推 main、setup.sh 增加 PR 规范提醒、冻结仓库已移除、仓库统一为单一 origin（XEngineer-dev）。相关 PR：#3-#7。
 
 ---
 
@@ -312,6 +190,8 @@ echo "=== 测试完成 ==="
 ## 四、执行顺序与依赖
 
 ```
+Phase 0 (Git规范强制) ✅ 已完成（PR #3-#7）
+    ↓
 Phase 1 (修图片链路) ← 无依赖，可立即开始
     ↓
 Phase 2 (TTS合成语音) ← 依赖 Phase 1（图片通了才有意义）
