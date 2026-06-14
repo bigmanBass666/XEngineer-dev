@@ -1,0 +1,17 @@
+#!/bin/bash
+# Pre-push hook: 阻止直接推送到 main/master 分支
+
+while read oldrev newrev refname; do
+    BRANCH=$(echo "$refname" | sed 's|refs/heads/||')
+    
+    if [ "$BRANCH" = "main" ] || [ "$BRANCH" = "master" ]; then
+        echo "❌ 错误：不能直接 push 到 ${BRANCH}"
+        echo ""
+        echo "请通过 GitHub PR 合并代码到 ${BRANCH}"
+        echo "  git push dev $(git rev-parse --abbrev-ref HEAD) -u"
+        echo "  然后在 GitHub 上创建 Pull Request"
+        exit 1
+    fi
+done
+
+exit 0
