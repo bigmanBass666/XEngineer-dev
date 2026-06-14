@@ -112,14 +112,16 @@ class PipelineOrchestrator:
     async def handle_image(self, image_data: str):
         """处理前端发来的截图
 
-        保存最新的 base64 JPEG 图片，供 VLM 节点使用。
-        当前版本为纯文本模式，图片暂不传入 VLM。
+        保存最新的 base64 JPEG 图片，并传递给 VLM 节点实现多模态理解。
 
         Args:
             image_data: Base64 编码的 JPEG 图片
         """
         self._latest_image = image_data
-        logger.debug("Latest screenshot updated")
+        # 将 base64 图片传入 VLM 节点（修复 D1：之前未调用，VLM 始终无图）
+        if self.vlm_node and hasattr(self.vlm_node, "update_image"):
+            self.vlm_node.update_image(image_data)
+        logger.debug("Latest screenshot updated and sent to VLM node")
 
     async def handle_vad_status(self, speaking: bool):
         """处理前端 VAD 状态变化

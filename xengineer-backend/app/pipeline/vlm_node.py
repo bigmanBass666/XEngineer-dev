@@ -51,7 +51,8 @@ class VLMNode(PipelineNode):
         """
         text = data.get("text", "")
         # 兼容 ASR 传来的 "image" 和外部传入的 "image_url"
-        image_url = data.get("image_url") or data.get("image") or self._latest_image_url
+        raw_image = data.get("image_url") or data.get("image") or self._latest_image_url
+        image_url = self._normalize_image(raw_image) if raw_image else None
 
         if not text:
             return data
@@ -118,9 +119,29 @@ class VLMNode(PipelineNode):
         """完整句子 → 传给下游 TTS 节点"""
         await self.send_to_next({"text": sentence})
 
-    def update_image(self, image_url: str):
-        """更新最新的图片 URL（由 Orchestrator 在收到截图时调用）"""
-        self._latest_image_url = image_url
+    def update_image(self, image_data: str):
+        """更新最新的图片（由 Orchestrator 在收到截图时调用）
+
+        支持两种格式：
+        - 公网 URL（http/https 开头）直接存储
+        - base64 原始数据自动包装为 data URI（修复 D2）
+
+        Args:
+            image_data: 图片 URL 或 base64 编码的 JPEG 图片
+        """
+        self._latest_image_url = self._normalize_image(image_data)
+
+    @staticmethod
+    def _normalize_image(image_data: str) -> str:
+        """将图片数据标准化为 VLM 可用的 URL
+
+        - 如果已经是 data URI 或 http URL，直接返回
+        - 如果是 raw base64，包装为 data:image/jpeg;base64,... 格式
+        """
+        if image_data.startswith(("data:", "http://", "https://")):
+            return image_data
+        # 修复 D2：raw base64 → VLM 可识别的 data URI
+        return f"data:image/jpeg;base64,{image_data}"
 
     def clear_history(self):
         """清除对话历史"""
