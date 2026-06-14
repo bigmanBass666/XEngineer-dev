@@ -21,12 +21,14 @@ class VolcengineTTS:
     RESOURCE_ID = "seed-tts-2.0"
     DEFAULT_SPEAKER = "zh_female_vv_uranus_bigtts"  # Vivi 2.0
 
-    def __init__(self, access_token: str):
+    def __init__(self, app_id: str, access_token: str):
         """初始化 TTS 客户端
 
         Args:
-            access_token: 火山引擎 Access Token，用于 X-Api-Key 认证
+            app_id: 火山引擎 APP ID
+            access_token: 火山引擎 Access Token
         """
+        self.app_id = app_id
         self.access_token = access_token
         self.client = httpx.AsyncClient(timeout=30.0)
 
@@ -51,7 +53,8 @@ class VolcengineTTS:
             音频数据 bytes，失败返回 None
         """
         headers = {
-            "X-Api-Key": self.access_token,
+            "X-Api-App-Key": self.app_id,
+            "X-Api-Access-Key": self.access_token,
             "X-Api-Resource-Id": self.RESOURCE_ID,
             "X-Api-Request-Id": str(uuid.uuid4()),
             "Content-Type": "application/json",
@@ -77,6 +80,11 @@ class VolcengineTTS:
                 json=payload,
                 headers=headers,
             )
+            if resp.status_code == 403:
+                err = resp.json().get("header", {})
+                print(f"[TTS Error] 403 Forbidden - code={err.get('code')}, msg={err.get('message')}")
+                print("[TTS Error] TTS 服务未开通或资源未授权，请在火山引擎控制台开通 seed-tts-2.0 服务")
+                return None
             resp.raise_for_status()
             data = resp.json()
 

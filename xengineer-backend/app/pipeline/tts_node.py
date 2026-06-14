@@ -20,7 +20,10 @@ class TTSNode(PipelineNode):
     def __init__(self, config):
         super().__init__("TTS")
         self.config = config
-        self.tts_client = VolcengineTTS(access_token=config.VOLCENGINE_ACCESS_TOKEN)
+        self.tts_client = VolcengineTTS(
+            app_id=config.VOLCENGINE_APP_ID,
+            access_token=config.VOLCENGINE_ACCESS_TOKEN,
+        )
 
     async def process(self, data: dict) -> dict:
         """将文本转为语音并推送给前端

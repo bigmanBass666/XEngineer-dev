@@ -64,6 +64,7 @@ class VolcengineASR:
         self.ws: Optional[websockets.WebSocketClientProtocol] = None
         self.on_result: Optional[Callable[[str], Awaitable[None]]] = None
         self.on_interim: Optional[Callable[[str], Awaitable[None]]] = None
+        self._last_sent = False
 
     # ------------------------------------------------------------------
     # Header / 帧构造
@@ -131,7 +132,7 @@ class VolcengineASR:
             pcm_data: PCM 音频原始字节（16kHz, 16bit, mono）
             is_last: 是否为最后一包（触发服务端最终识别）
         """
-        compressed = gzip.compress(pcm_data) if pcm_data else b""
+        compressed = gzip.compress(pcm_data) if pcm_data else gzip.compress(b"")
         flags = self.FLAG_LAST_NO_SEQ if is_last else self.FLAG_NO_SEQUENCE
         header = self._build_header(
             msg_type=self.MSG_AUDIO_ONLY,
@@ -173,19 +174,35 @@ class VolcengineASR:
         if msg_type != self.MSG_SERVER_RESPONSE:
             return {"error": True, "message": f"Unknown message type: 0x{msg_type:02X}"}
 
-        # ---- 正常响应: header(4) + sequence(4) + payload_size(4) + payload ----
-        if len(data) < 12:
+        # ---- 正常响应 ----
+        # 服务端首帧（对 full client request 的确认）格式为:
+        #   header(4) + payload_size(4) + payload  （无 sequence）
+        # 后续帧格式为:
+        #   header(4) + sequence(4) + payload_size(4) + payload
+        # 通过检测 data[8] 是否为 JSON 起始字符来区分两种格式。
+        if len(data) < 8:
             return {"error": True, "message": "Malformed server response"}
 
         compression = header[2] & 0x0F
-        payload_size = struct.unpack(">I", data[8:12])[0]
-        compressed_payload = data[12 : 12 + payload_size]
+
+        if data[8:9] in (b"{", b"["):
+            # 无 sequence 字段的初始确认帧: header(4) + payload_size(4) + payload
+            payload_size = struct.unpack(">I", data[4:8])[0]
+            compressed_payload = data[8 : 8 + payload_size]
+        elif len(data) < 12:
+            return {"error": True, "message": "Malformed server response"}
+        else:
+            # 标准 format: header(4) + sequence(4) + payload_size(4) + payload
+            payload_size = struct.unpack(">I", data[8:12])[0]
+            compressed_payload = data[12 : 12 + payload_size]
 
         try:
             if compression == self.COMP_GZIP:
                 payload = gzip.decompress(compressed_payload).decode("utf-8")
             else:
                 payload = compressed_payload.decode("utf-8")
+            if not payload.strip():
+                return {"error": False, "is_last": is_last}
             result = json.loads(payload)
             return {"error": False, "is_last": is_last, **result}
         except Exception as e:
@@ -215,6 +232,8 @@ class VolcengineASR:
             pcm_data: PCM 音频字节（16kHz, 16bit, mono）
             is_last: 是否为最后一包
         """
+        if is_last:
+            self._last_sent = True
         if self.ws:
             await self.ws.send(self._build_audio_packet(pcm_data, is_last))
 
@@ -225,34 +244,41 @@ class VolcengineASR:
         """
         if not self.ws:
             return
-        async for data in self.ws:
-            result = self._parse_response(data)
-            if result.get("error"):
-                print(f"[ASR Error] {result.get('message', result)}")
-                continue
+        try:
+            async for data in self.ws:
+                result = self._parse_response(data)
+                if result.get("error"):
+                    print(f"[ASR Error] {result.get('message', result)}")
+                    continue
 
-            text = result.get("result", {}).get("text", "")
-            if not text:
-                continue
+                text = result.get("result", {}).get("text", "")
+                if not text:
+                    continue
 
-            is_last = result.get("is_last", False)
-            if is_last and self.on_result:
-                await self.on_result(text)
-            elif not is_last and self.on_interim:
-                await self.on_interim(text)
+                is_last = result.get("is_last", False)
+                if is_last and self.on_result:
+                    await self.on_result(text)
+                elif not is_last and self.on_interim:
+                    await self.on_interim(text)
+        except websockets.exceptions.ConnectionClosed:
+            pass  # 服务端在处理完最后一包后关闭连接，属于正常行为
 
     async def close(self):
         """发送结束信号并关闭连接
 
-        1. 发送空音频包（is_last=True）通知服务端音频结束
+        1. 若尚未发送结束包，发送空音频包（is_last=True）通知服务端音频结束
         2. 等待最终识别结果
         3. 关闭 WebSocket 连接
         """
         if not self.ws:
             return
 
-        # 发送空音频包作为结束信号
-        await self.send_audio(b"", is_last=True)
+        # 仅在尚未发送结束包时发送
+        if not self._last_sent:
+            try:
+                await self.send_audio(b"", is_last=True)
+            except websockets.exceptions.ConnectionClosed:
+                pass  # 服务端已关闭连接
 
         # 等待最终结果
         try:
@@ -262,10 +288,13 @@ class VolcengineASR:
                 text = result.get("result", {}).get("text", "")
                 if text:
                     await self.on_result(text)
-        except asyncio.TimeoutError:
+        except (asyncio.TimeoutError, websockets.exceptions.ConnectionClosed):
             pass
         except Exception as e:
             print(f"[ASR Warning] Error receiving final result: {e}")
 
-        await self.ws.close()
+        try:
+            await self.ws.close()
+        except Exception:
+            pass
         self.ws = None
