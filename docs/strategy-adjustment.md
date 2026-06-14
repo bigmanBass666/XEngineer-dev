@@ -112,8 +112,32 @@ main (受保护)
 
 但需要注意：如果将来在根目录也进行开发（fullstack 等），根 git 的 pre-commit hook 可能需要调整。
 
-## 六、待讨论
+## 六、讨论记录
 
-- [ ] 仓库改名？`XEngineer-temp` → `XEngineer`（更正式）还是保持原名？
-- [ ] 是否需要在 GitHub Settings 中保护 main 分支（要求 PR 合并）？
-- [ ] PR 用 squash merge 还是 merge commit？（squash 更干净，merge commit 保留分支历史）
+### 6.1 仓库改名
+- [x] **决定：不改名**，保持 `XEngineer-temp`
+- 原因：比赛没要求仓库名，改名需要更新 remote URL，增加不必要的复杂度
+
+### 6.2 是否保护 main 分支（要求 PR 合并）
+
+**我的建议：不保护。**
+
+理由：
+1. **保护 main 的目的是防止直接 push**，但我们已经通过 worklog 规范（❌ 直接在 main 上 commit）+ 人工纪律来约束了
+2. GitHub branch protection 要求 PR 合并后，每次 push 到功能分支也会被要求 CI 通过（如果配了 CI）。我们没有 CI，保护规则反而可能造成不必要的阻碍
+3. **单人参赛**，没有多人协作冲突风险，保护 main 的收益很低
+4. 如果不小心直接在 main 上 commit 并 push，后果只是少了一个 PR 记录（这在 40% 的过程分里扣一点分），但不会导致代码损坏
+5. 反而如果 branch protection 出问题（比如设置了但忘记配权限），可能导致 PR 都合不进去，浪费时间
+
+**结论：靠规范而非技术强制。** 如果后期觉得有必要，随时可以在 GitHub Settings 加保护。
+
+### 6.3 PR 用 squash merge 还是 merge commit
+
+**我的建议：squash merge。**
+
+理由：
+1. **main 历史更干净** — 每个 PR 压成一个 commit，main 上的 commit 历史就是 PR 列表的镜像，评委一眼就能看出开发节奏
+2. **分支内的试错 commit 不会污染 main** — 开发过程中可能有 `fix: 修了个typo`、`chore: 调试` 这种无意义 commit，squash 后只保留 PR 级别的语义 commit
+3. **评委看的是 PR 数量和分布**，不是分支内的细粒度 commit。分支内 commit 细粒度是为了自己调试方便，main 上 commit 细粒度是为了评委好看——squash 两者兼得
+4. merge commit 在单人参赛下没有意义（没有分支合并冲突解决的记录价值）
+5. GitHub 默认勾选 squash merge，操作上也更方便
