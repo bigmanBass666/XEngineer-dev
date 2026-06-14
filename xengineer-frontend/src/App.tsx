@@ -4,6 +4,7 @@ import { ChatBubble } from './components/ChatBubble'
 import { StreamingMessage } from './components/StreamingMessage'
 import { AudioRecorder } from './components/AudioRecorder'
 import { AudioPlayer, audioPlayer } from './components/AudioPlayer'
+import { Camera } from './components/Camera'
 import { useState, useCallback, useRef, useEffect } from 'react'
 import type { ServerMessage, ChatMessage, VADStatus } from './lib/protocol'
 import type { VADState } from './lib/vad'
@@ -14,6 +15,7 @@ function App() {
   const [currentAIResponse, setCurrentAIResponse] = useState('')
   const [isAIProcessing, setIsAIProcessing] = useState(false)
   const [vadStatus, setVadStatus] = useState<VADStatus>('silent')
+  const [shouldCapture, setShouldCapture] = useState(false)
   const currentResponseRef = useRef('')
   const chatEndRef = useRef<HTMLDivElement>(null)
   const chatContainerRef = useRef<HTMLDivElement>(null)
@@ -87,14 +89,26 @@ function App() {
     send({ type: 'audio', data: base64 })
   }, [send])
 
-  // AudioRecorder 回调：更新 VAD 状态 + Barge-in 打断
+  // Camera 截图回调：发送图片到后端
+  const handleCameraFrame = useCallback((base64: string) => {
+    send({ type: 'image', data: base64 })
+  }, [send])
+
+  // AudioRecorder 回调：更新 VAD 状态 + Barge-in 打断 + 通知后端 + 触发截图
   const handleVADStateChange = useCallback((state: VADState) => {
     setVadStatus(state as VADStatus)
     // Barge-in：用户开始说话时立即停止 TTS 播放并清空队列
     if (state === 'speaking') {
       audioPlayer.stop()
     }
-  }, [])
+    // 通知后端VAD状态（关键！后端依赖此消息启动/停止ASR会话）
+    send({ type: 'vad_status', speaking: state === 'speaking' })
+    // VAD检测到说话时触发Camera截图
+    if (state === 'speaking') {
+      setShouldCapture(true)
+      setTimeout(() => setShouldCapture(false), 100)
+    }
+  }, [send])
 
   const hasMessages = messages.length > 0 || !!currentAIResponse
 
@@ -114,13 +128,8 @@ function App() {
       <main className="flex-1 flex overflow-hidden">
         {/* 左侧：摄像头区域 */}
         <div className="w-1/2 p-4 flex flex-col items-center justify-center border-r border-gray-700">
-          <div className="w-full max-w-md aspect-video bg-gray-800 rounded-lg flex items-center justify-center border border-gray-700">
-            <div className="text-center">
-              <svg className="w-12 h-12 mx-auto text-gray-600 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" />
-              </svg>
-              <p className="text-gray-500 text-sm">摄像头预览区域</p>
-            </div>
+          <div className="w-full max-w-md">
+            <Camera onFrame={handleCameraFrame} triggerCapture={shouldCapture} />
           </div>
           <button
             onClick={sendTest}
