@@ -1,0 +1,20 @@
+#!/bin/bash
+# Pre-commit hook: 阻止直接 commit 到 main/master，强制 PR 工作流
+
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+PROTECTED_BRANCHES=("main" "master")
+
+if [[ " ${PROTECTED_BRANCHES[*]} " == *" ${BRANCH} "* ]]; then
+    echo ""
+    echo "❌ 错误：不能直接 commit 到 ${BRANCH} 分支"
+    echo ""
+    echo "请使用 PR 工作流："
+    echo "  1. git checkout -b feature/你的功能名"
+    echo "  2. 修改代码 + commit"
+    echo "  3. git push dev feature/你的功能名"
+    echo "  4. 在 GitHub 创建 PR → Review → Merge"
+    echo ""
+    echo "参考：docs/competition-rules.md §PR提交规范"
+    echo ""
+    exit 1
+fi
