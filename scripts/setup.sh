@@ -23,7 +23,7 @@ else
 fi
 
 # 4. 设置 remote URL（不含 token，hook 会动态注入）
-git remote set-url origin https://github.com/bigmanBass666/XEngineer-temp.git 2>/dev/null
+git remote set-url origin https://github.com/bigmanBass666/XEngineer-dev.git 2>/dev/null
 echo "[OK] remote URL 已标准化"
 
 # 5. 清理旧的 .git/hooks 中的同名 hook（避免冲突）
