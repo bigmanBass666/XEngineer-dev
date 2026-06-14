@@ -54,6 +54,58 @@ else
     fi
 fi
 
+# 7. 安装 Railway CLI（如果未安装）
+if command -v railway &>/dev/null; then
+    echo "[OK] Railway CLI 已安装: $(railway --version 2>/dev/null | head -1)"
+else
+    echo "[INFO] 安装 Railway CLI..."
+    npm install -g @railway/cli 2>/dev/null
+    if command -v railway &>/dev/null; then
+        echo "[OK] Railway CLI 安装成功"
+    else
+        echo "[WARN] Railway CLI 安装失败"
+    fi
+fi
+
+# 8. Railway token 认证（通过 RAILWAY_TOKEN 环境变量）
+if [ -f .secrets/tokens.env ]; then
+    source .secrets/tokens.env 2>/dev/null
+    export RAILWAY_TOKEN
+    if railway status &>/dev/null; then
+        echo "[OK] Railway 认证成功"
+    else
+        echo "[WARN] Railway token 无效或已过期"
+    fi
+else
+    echo "[WARN] .secrets/tokens.env 不存在，Railway 认证跳过"
+fi
+
+# 9. 安装 Netlify CLI（如果未安装）
+if command -v netlify &>/dev/null; then
+    echo "[OK] Netlify CLI 已安装: $(netlify --version 2>/dev/null | head -1)"
+else
+    echo "[INFO] 安装 Netlify CLI..."
+    npm install -g netlify-cli 2>/dev/null
+    if command -v netlify &>/dev/null; then
+        echo "[OK] Netlify CLI 安装成功"
+    else
+        echo "[WARN] Netlify CLI 安装失败"
+    fi
+fi
+
+# 10. Netlify token 认证
+if [ -f .secrets/tokens.env ]; then
+    source .secrets/tokens.env 2>/dev/null
+    export NETLIFY_AUTH_TOKEN
+    if netlify status 2>/dev/null; then
+        echo "[OK] Netlify 认证成功"
+    else
+        echo "[WARN] Netlify token 无效或已过期"
+    fi
+else
+    echo "[WARN] .secrets/tokens.env 不存在，Netlify 认证跳过"
+fi
+
 echo ""
 echo "=== 初始化完成 ==="
 echo "后续 commit 将自动 push 到远程（post-commit hook）"
