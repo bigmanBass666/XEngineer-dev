@@ -4,6 +4,7 @@
 API 文档: https://www.volcengine.com/docs/6561/1161849
 """
 
+import json
 import uuid
 import httpx
 import base64
@@ -18,7 +19,7 @@ class VolcengineTTS:
     """
 
     API_URL = "https://openspeech.bytedance.com/api/v3/tts/unidirectional"
-    RESOURCE_ID = "seed-tts-2.0"
+    RESOURCE_ID = "volc.seedtts.default"
     DEFAULT_SPEAKER = "zh_female_vv_uranus_bigtts"  # Vivi 2.0
 
     def __init__(self, app_id: str, access_token: str):
@@ -86,18 +87,26 @@ class VolcengineTTS:
                 print("[TTS Error] TTS 服务未开通或资源未授权，请在火山引擎控制台开通 seed-tts-2.0 服务")
                 return None
             resp.raise_for_status()
-            data = resp.json()
 
-            if data.get("code") != 3000:
-                print(f"[TTS Error] code={data.get('code')}, msg={data.get('message')}")
-                return None
+            # 响应为 ndjson 格式（多行JSON），每行一个音频分片
+            audio_parts = []
+            for line in resp.text.strip().split('\n'):
+                if not line:
+                    continue
+                chunk = json.loads(line)
+                code = chunk.get('code', 0)
+                if code not in (0, 20000000):
+                    print(f"[TTS Error] code={code}, msg={chunk.get('message')}")
+                    return None
+                data = chunk.get('data')
+                if data:
+                    audio_parts.append(base64.b64decode(data))
 
-            audio_base64 = data.get("data", "")
-            if not audio_base64:
+            if not audio_parts:
                 print("[TTS Error] No audio data in response")
                 return None
 
-            return base64.b64decode(audio_base64)
+            return b''.join(audio_parts)
         except Exception as e:
             print(f"[TTS Error] {e}")
             return None
