@@ -269,13 +269,9 @@ async def run_single_utterance(ws, utterance: dict, image_base64: str, results: 
 
     recv_task = asyncio.create_task(receiver())
 
-    # Step 1: 发送图片（每次会话重新发送，确保 VLM 有图）
-    await ws.send(json.dumps({"type": "image", "data": image_base64}))
-    await asyncio.sleep(0.5)
-
-    # Step 2: VAD 开始说话
+    # Step 1: VAD 开始说话（triggers ASR session start + camera snapshot）
     await ws.send(json.dumps({"type": "vad_status", "speaking": True}))
-    await asyncio.sleep(2)  # 等待 ASR 会话启动
+    await asyncio.sleep(0.5)  # Brief wait for ASR session to initialize
     session_started = any(
         m.get("type") == "status" and "asr_session_started" in m.get("message", "")
         for m in session_msgs
@@ -285,20 +281,29 @@ async def run_single_utterance(ws, utterance: dict, image_base64: str, results: 
     else:
         results.fail(f"#{uid} ASR 会话启动", "未收到 asr_session_started")
 
-    # Step 3: 合成语音并发送
+    # Step 2: 发送图片（simulates camera snapshot triggered by VAD）
+    await ws.send(json.dumps({"type": "image", "data": image_base64}))
+
+    # Step 3: 合成语音并发送（1024B chunks at 32ms intervals, matching ScriptProcessorNode(512)）
     pcm_data, is_real = get_test_pcm(text)
-    n_chunks = max(1, len(pcm_data) // 8192)  # 每片约 256ms
-    n_chunks = min(n_chunks, 20)  # 上限 20 片
-    chunk_size = len(pcm_data) // n_chunks
+    chunk_size = 1024  # 512 samples × 2 bytes (matches ScriptProcessorNode(512) output)
+    n_chunks = len(pcm_data) // chunk_size
     for i in range(n_chunks):
         chunk = pcm_data[i * chunk_size : (i + 1) * chunk_size]
         chunk_b64 = base64.b64encode(chunk).decode('utf-8')
         await ws.send(json.dumps({"type": "audio", "data": chunk_b64}))
-        await asyncio.sleep(0.2)
-    print(f"    {n_chunks} 个音频分片已发送")
-    await asyncio.sleep(1)
+        await asyncio.sleep(0.032)  # 32ms between chunks (matches ScriptProcessorNode rate)
+    # Handle remaining bytes
+    remaining = pcm_data[n_chunks * chunk_size:]
+    if remaining:
+        chunk_b64 = base64.b64encode(remaining).decode('utf-8')
+        await ws.send(json.dumps({"type": "audio", "data": chunk_b64}))
+    print(f"    {n_chunks + (1 if remaining else 0)} 个音频分片已发送 (每片 {chunk_size} bytes @32ms)")
 
-    # Step 4: VAD 停止说话 → 触发 ASR 最终识别 → VLM → TTS
+    # Brief pause after audio to let last chunks process
+    await asyncio.sleep(0.5)
+
+    # Step 4: VAD 停止说话（triggers ASR final recognition → VLM → TTS）
     await ws.send(json.dumps({"type": "vad_status", "speaking": False}))
     print(f"    等待 pipeline 响应（最长 35 秒）...")
 
