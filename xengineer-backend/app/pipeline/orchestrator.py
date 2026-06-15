@@ -196,7 +196,11 @@ class PipelineOrchestrator:
     # ------------------------------------------------------------------
 
     async def cleanup(self):
-        """清理资源：停止 ASR 会话、关闭客户端连接"""
+        """清理资源：停止 ASR 会话、重置 WS 状态
+
+        注意：不在此处关闭全局 agnes client。
+        agnes client 的生命周期由 lifespan() 管理（应用退出时关闭）。
+        """
         logger.info("Orchestrator cleanup")
 
         # 停止可能正在运行的 ASR 会话
@@ -208,12 +212,8 @@ class PipelineOrchestrator:
                 except Exception:
                     pass
 
-        # 关闭 Agnes 客户端（如果 VLM 节点持有一个）
-        if self.vlm_node and hasattr(self.vlm_node, "agnes"):
-            try:
-                await self.vlm_node.agnes.close()
-            except Exception:
-                pass
+        # 不要在这里关闭全局 agnes client！
+        # vlm_node.agnes 的生命周期由 lifespan 管理
 
         # 重置状态
         self.ws_connection = None

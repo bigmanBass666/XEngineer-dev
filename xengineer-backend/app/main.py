@@ -78,6 +78,17 @@ async def lifespan(app: FastAPI):
 
     yield
 
+    # 应用关闭时清理：停止 ASR 会话，然后关闭全局 agnes client
+    try:
+        await orchestrator.cleanup()
+    except Exception:
+        pass
+    if USE_REAL and orchestrator.vlm_node and hasattr(orchestrator.vlm_node, "agnes"):
+        try:
+            await orchestrator.vlm_node.agnes.close()
+        except Exception:
+            pass
+
 
 app = FastAPI(
     title="XEngineer Backend",
