@@ -54,18 +54,29 @@ class ASRNode(PipelineNode):
         )
 
     async def stop_session(self):
-        """结束 ASR 会话：关闭客户端、取消接收任务"""
-        if self._receive_task and not self._receive_task.done():
-            self._receive_task.cancel()
-            try:
-                await self._receive_task
-            except asyncio.CancelledError:
-                pass
-            self._receive_task = None
+        """结束 ASR 会话：先让 close() 发送 is_last 并等结果，再清理
 
+        顺序很重要：
+        1. 调用 asr_client.close() 发送 is_last=True 结束包、等待最终识别结果、关闭 ws
+        2. receive_loop 在 ws 关闭后收到 ConnectionClosed 自然退出
+        3. 若 receive_loop 未退出，超时后取消
+        """
+        # 1. 先关闭 ASR 客户端（发 is_last + 等最终结果 + 关 ws）
         if self.asr_client:
             await self.asr_client.close()
             self.asr_client = None
+
+        # 2. receive_loop 在 ws 关闭后会自然退出（ConnectionClosed）
+        if self._receive_task and not self._receive_task.done():
+            try:
+                await asyncio.wait_for(self._receive_task, timeout=3.0)
+            except asyncio.TimeoutError:
+                self._receive_task.cancel()
+                try:
+                    await self._receive_task
+                except asyncio.CancelledError:
+                    pass
+        self._receive_task = None
 
     # ------------------------------------------------------------------
     # PipelineNode.process
