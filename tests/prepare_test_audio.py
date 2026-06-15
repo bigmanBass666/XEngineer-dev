@@ -196,8 +196,7 @@ def main():
     for i, utt in enumerate(TEST_UTTERANCES):
         uid = utt["id"]
         text = utt["text"]
-        print(f"
-[{i + 1}/{len(TEST_UTTERANCES)}] 语句 #{uid}: "{text}"")
+        print(f"\n[{i + 1}/{len(TEST_UTTERANCES)}] 语句 #{uid}: “{text}”")
 
         pcm_s16le, is_real = get_test_pcm(text, tts_available, ffmpeg_available)
         record = build_utterance_record(utt, pcm_s16le, is_real)
@@ -217,8 +216,7 @@ def main():
         json.dump(output, f, ensure_ascii=False, indent=2)
 
     file_size = OUTPUT_FILE.stat().st_size
-    print(f"
-{"=" * 55}")
+    print(f"\n{"=" * 55}")
     print(f"✅ 输出完成: {OUTPUT_FILE}")
     print(f"   文件大小: {file_size:,} bytes ({file_size / 1024:.1f} KB)")
     real_count = sum(1 for r in utterance_records if r["is_real"])
