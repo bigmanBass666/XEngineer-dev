@@ -264,37 +264,33 @@ class VolcengineASR:
             pass  # 服务端在处理完最后一包后关闭连接，属于正常行为
 
     async def close(self):
-        """发送结束信号并关闭连接
+        """发送结束信号
 
-        1. 若尚未发送结束包，发送空音频包（is_last=True）通知服务端音频结束
-        2. 等待最终识别结果
-        3. 关闭 WebSocket 连接
+        发送 is_last=True 通知服务端音频结束。
+        receive_loop 会接收最终识别结果并自然退出。
+
+        注意：不在此处调用 ws.recv()，因为 receive_loop 已经在监听 WebSocket。
+        websockets >= 13 不允许并发 recv()，close() 中的 recv 会与 receive_loop
+        冲突，导致最终结果丢失。
         """
         if not self.ws:
             return
 
-        # 仅在尚未发送结束包时发送
+        # 发送结束包
         if not self._last_sent:
             try:
                 await self.send_audio(b"", is_last=True)
             except websockets.exceptions.ConnectionClosed:
                 pass  # 服务端已关闭连接
 
-        # 等待最终结果
-        try:
-            data = await asyncio.wait_for(self.ws.recv(), timeout=5.0)
-            result = self._parse_response(data)
-            if not result.get("error") and self.on_result:
-                text = result.get("result", {}).get("text", "")
-                if text:
-                    await self.on_result(text)
-        except (asyncio.TimeoutError, websockets.exceptions.ConnectionClosed):
-            pass
-        except Exception as e:
-            print(f"[ASR Warning] Error receiving final result: {e}")
+    async def close_ws(self):
+        """关闭 WebSocket 连接
 
-        try:
-            await self.ws.close()
-        except Exception:
-            pass
-        self.ws = None
+        应在 receive_loop 退出后调用。
+        """
+        if self.ws:
+            try:
+                await self.ws.close()
+            except Exception:
+                pass
+            self.ws = None
