@@ -132,7 +132,7 @@ echo "── 步骤 1: 打开前端页面 ──"
 run_ab 5 close >/dev/null 2>&1
 sleep 1
 
-OPEN_OUT=$(run_ab $OPEN_TIMEOUT open "$FRONTEND_URL" --init-script "$FIXTURE_HOOK")
+OPEN_OUT=$(run_ab $OPEN_TIMEOUT open "$FRONTEND_URL")
 if echo "$OPEN_OUT" | grep -qi "error\|fail\|timeout\|__AB_TIMEOUT_OR_ERROR__"; then
     fail "页面打开失败"
     echo "  输出: $OPEN_OUT"
@@ -161,16 +161,22 @@ fi
 echo ""
 
 # =============================================================================
-# 2. 验证 getUserMedia Hook + 加载预合成音频元数据
+# 2. 注入 getUserMedia Hook + 加载预合成音频元数据
 # =============================================================================
-echo "── 步骤 2: 验证 Hook（已通过 init-script 加载） ──"
+echo "── 步骤 2: 注入 getUserMedia Hook ──"
 
-# 2a. 验证 init-script 加载的 hook 已生效
-VERIFY_HOOK=$(run_ab $EVAL_TIMEOUT eval "typeof window.__mockAudio !== 'undefined'" 2>&1)
-if echo "$VERIFY_HOOK" | grep -qi "true"; then
-    pass "mock_getusermedia.js 通过 init-script 加载成功，window.__mockAudio 已就绪"
+# 2a. 通过 eval --stdin 加载 mock_getusermedia.js
+HOOK_JS=$(cat "$FIXTURE_HOOK")
+EVAL_HOOK_OUT=$(echo "$HOOK_JS" | run_ab $EVAL_TIMEOUT eval --stdin 2>&1)
+# eval --stdin 返回值可能是表达式结果或 null（console.log 返回 undefined）
+# 不用返回值判断，直接验证 __mockAudio 是否存在
+
+# 2b. 验证 hook 已生效
+VERIFY_HOOK=$(run_ab $EVAL_TIMEOUT eval "typeof window.__mockAudio" 2>&1)
+if echo "$VERIFY_HOOK" | grep -qi "object"; then
+    pass "mock_getusermedia.js 注入成功，window.__mockAudio 已就绪"
 else
-    fail "window.__mockAudio 未创建（init-script 可能未生效）"
+    fail "window.__mockAudio 未创建"
 fi
 
 # 2c. 加载预合成音频元数据到页面（不含 PCM base64，避免 ARG_MAX）
@@ -276,7 +282,8 @@ sys.stdout.write('\"SET_VAR_OK\";\n')
         return 1
     fi
     # 步骤 2: 解码 base64 → Float32Array → setAudio → startFeeding
-    DECODE_JS='(function(){var b=window.__mockAudio._pendingBase64;if(!b){console.error("NO_DATA");return;}var r=atob(b);var a=new Uint8Array(r.length);for(var i=0;i<r.length;i++)a[i]=r.charCodeAt(i);var f=new Float32Array(a.buffer);window.__mockAudio.setAudio(f);window.__mockAudio.startFeeding();delete window.__mockAudio._pendingBase64;console.log("INJECT_OK:"+f.length);})();'
+    # 注意: console.log 返回 undefined (显示为 null)，所以用表达式字符串返回结果
+    DECODE_JS='(function(){var b=window.__mockAudio._pendingBase64;if(!b){return "NO_DATA";}var r=atob(b);var a=new Uint8Array(r.length);for(var i=0;i<r.length;i++)a[i]=r.charCodeAt(i);var f=new Float32Array(a.buffer);window.__mockAudio.setAudio(f);window.__mockAudio.startFeeding();delete window.__mockAudio._pendingBase64;return "INJECT_OK:"+f.length;})();'
     DECODE_OUT=$(echo "$DECODE_JS" | run_ab $EVAL_TIMEOUT eval --stdin 2>&1)
     if echo "$DECODE_OUT" | grep -q "INJECT_OK"; then
         SAMPLE_COUNT=$(echo "$DECODE_OUT" | rg -o 'INJECT_OK:\d+' | rg -o '\d+')
