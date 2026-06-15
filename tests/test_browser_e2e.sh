@@ -277,7 +277,7 @@ sys.stdout.write('\"SET_VAR_OK\";\n')
     fi
     # 步骤 2: 解码 base64 → Float32Array → setAudio → startFeeding
     DECODE_JS='(function(){var b=window.__mockAudio._pendingBase64;if(!b){console.error("NO_DATA");return;}var r=atob(b);var a=new Uint8Array(r.length);for(var i=0;i<r.length;i++)a[i]=r.charCodeAt(i);var f=new Float32Array(a.buffer);window.__mockAudio.setAudio(f);window.__mockAudio.startFeeding();delete window.__mockAudio._pendingBase64;console.log("INJECT_OK:"+f.length);})();'
-    DECODE_OUT=$(run_ab $EVAL_TIMEOUT eval "$DECODE_JS" 2>&1)
+    DECODE_OUT=$(echo "$DECODE_JS" | run_ab $EVAL_TIMEOUT eval --stdin 2>&1)
     if echo "$DECODE_OUT" | grep -q "INJECT_OK"; then
         SAMPLE_COUNT=$(echo "$DECODE_OUT" | rg -o 'INJECT_OK:\d+' | rg -o '\d+')
         pass "PCM 数据注入成功（$label, $SAMPLE_COUNT samples）"
