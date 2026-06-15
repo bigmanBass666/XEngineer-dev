@@ -54,28 +54,34 @@ class ASRNode(PipelineNode):
         )
 
     async def stop_session(self):
-        """结束 ASR 会话：先让 close() 发送 is_last 并等结果，再清理
+        """结束 ASR 会话：发送 is_last、等待 receive_loop 处理最终结果、关闭连接
 
-        顺序很重要：
-        1. 调用 asr_client.close() 发送 is_last=True 结束包、等待最终识别结果、关闭 ws
-        2. receive_loop 在 ws 关闭后收到 ConnectionClosed 自然退出
-        3. 若 receive_loop 未退出，超时后取消
+        关闭顺序很重要：
+        1. 调用 close() 仅发送 is_last=True 结束包（不 recv，避免与 receive_loop 冲突）
+        2. 等待 receive_loop 自然退出（它收到 is_last 后服务端关闭连接 → ConnectionClosed）
+        3. 超时兜底：取消 receive_task
+        4. 关闭 ws 连接
         """
-        # 1. 先关闭 ASR 客户端（发 is_last + 等最终结果 + 关 ws）
+        # 1. 发送 is_last 结束包（不 recv，不关 ws）
         if self.asr_client:
             await self.asr_client.close()
-            self.asr_client = None
 
-        # 2. receive_loop 在 ws 关闭后会自然退出（ConnectionClosed）
+        # 2. 等待 receive_loop 处理最终结果后自然退出
         if self._receive_task and not self._receive_task.done():
             try:
-                await asyncio.wait_for(self._receive_task, timeout=3.0)
+                await asyncio.wait_for(self._receive_task, timeout=8.0)
             except asyncio.TimeoutError:
                 self._receive_task.cancel()
                 try:
                     await self._receive_task
                 except asyncio.CancelledError:
                     pass
+
+        # 3. 关闭 WebSocket 连接
+        if self.asr_client:
+            await self.asr_client.close_ws()
+            self.asr_client = None
+
         self._receive_task = None
 
     # ------------------------------------------------------------------
