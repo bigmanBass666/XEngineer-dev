@@ -182,17 +182,25 @@ else
     fail "window.__mockAudio 未创建"
 fi
 
-# 2c. 加载预合成音频元数据到页面
-AUDIO_META_JS=$(python3 -c "
+# 2c. 加载预合成音频元数据到页面（不含 PCM base64，避免 ARG_MAX）
+EVAL_META_OUT=$(python3 -c "
 import json
 with open('$FIXTURE_AUDIO') as f:
     data = json.load(f)
 utterances = data.get('utterances', [])
-print(f'window.__testUtterances = {json.dumps(utterances, ensure_ascii=False)};')
-print(f'console.log(\"LOADED_UTTERANCES:{len(utterances)}\");')
-" 2>/dev/null)
-
-EVAL_META_OUT=$(run_ab $EVAL_TIMEOUT eval "$AUDIO_META_JS" 2>&1)
+# 只提取元数据，不包含 pcm_base64
+meta_only = []
+for u in utterances:
+    meta_only.append({
+        'id': u.get('id', ''),
+        'text': u.get('text', ''),
+        'keywords': u.get('keywords', []),
+        'duration': u.get('duration', 0),
+        'sample_rate': u.get('sample_rate', 16000),
+    })
+print(f'window.__testUtterances = {json.dumps(meta_only, ensure_ascii=False)};')
+print(f'console.log(\"LOADED_UTTERANCES:{len(meta_only)}\");')
+" 2>/dev/null | run_ab $EVAL_TIMEOUT eval --stdin 2>&1)
 if echo "$EVAL_META_OUT" | grep -q "LOADED_UTTERANCES"; then
     LOADED_COUNT=$(echo "$EVAL_META_OUT" | rg -o 'LOADED_UTTERANCES:\d+' | rg -o '\d+')
     pass "已加载 $LOADED_COUNT 条预合成音频元数据"
@@ -230,8 +238,8 @@ inject_pcm() {
 
     info "注入 PCM 数据（$label, utterance $idx）..."
 
-    # 将 base64 PCM 解码为 Float32 并注入
-    INJECT_JS=$(python3 -c "
+    # 将 base64 PCM 解码为 Float32 并注入（通过 stdin 管道避免 ARG_MAX）
+    INJECT_OUT=$(python3 -c "
 import json, base64, struct
 
 with open('$FIXTURE_AUDIO') as f:
@@ -252,9 +260,7 @@ if idx < len(utterances):
         print('console.error(\"NO_PCM_DATA\");')
 else:
     print('console.error(\"INDEX_OUT_OF_RANGE\");')
-" 2>/dev/null)
-
-    INJECT_OUT=$(run_ab $EVAL_TIMEOUT eval "$INJECT_JS" 2>&1)
+" 2>/dev/null | run_ab $EVAL_TIMEOUT eval --stdin 2>&1)
     if echo "$INJECT_OUT" | grep -q "INJECT_OK"; then
         SAMPLE_COUNT=$(echo "$INJECT_OUT" | rg -o 'INJECT_OK:\d+' | rg -o '\d+')
         pass "PCM 数据注入成功（$label, $SAMPLE_COUNT samples）"
