@@ -132,7 +132,7 @@ echo "── 步骤 1: 打开前端页面 ──"
 run_ab 5 close >/dev/null 2>&1
 sleep 1
 
-OPEN_OUT=$(run_ab $OPEN_TIMEOUT open "$FRONTEND_URL")
+OPEN_OUT=$(run_ab $OPEN_TIMEOUT open "$FRONTEND_URL" --init-script "$FIXTURE_HOOK")
 if echo "$OPEN_OUT" | grep -qi "error\|fail\|timeout\|__AB_TIMEOUT_OR_ERROR__"; then
     fail "页面打开失败"
     echo "  输出: $OPEN_OUT"
@@ -161,25 +161,16 @@ fi
 echo ""
 
 # =============================================================================
-# 2. 注入 getUserMedia Hook + 预合成音频
+# 2. 验证 getUserMedia Hook + 加载预合成音频元数据
 # =============================================================================
-echo "── 步骤 2: 注入 getUserMedia Hook ──"
+echo "── 步骤 2: 验证 Hook（已通过 init-script 加载） ──"
 
-# 2a. 加载 hook 脚本
-HOOK_JS=$(cat "$FIXTURE_HOOK")
-EVAL_HOOK_OUT=$(run_ab $EVAL_TIMEOUT eval "$HOOK_JS" 2>&1)
-if echo "$EVAL_HOOK_OUT" | grep -qi "__AB_TIMEOUT_OR_ERROR__"; then
-    fail "注入 mock_getusermedia.js 失败"
-else
-    pass "mock_getusermedia.js 注入成功"
-fi
-
-# 2b. 验证 hook 生效
+# 2a. 验证 init-script 加载的 hook 已生效
 VERIFY_HOOK=$(run_ab $EVAL_TIMEOUT eval "typeof window.__mockAudio !== 'undefined'" 2>&1)
 if echo "$VERIFY_HOOK" | grep -qi "true"; then
-    pass "window.__mockAudio 已就绪"
+    pass "mock_getusermedia.js 通过 init-script 加载成功，window.__mockAudio 已就绪"
 else
-    fail "window.__mockAudio 未创建"
+    fail "window.__mockAudio 未创建（init-script 可能未生效）"
 fi
 
 # 2c. 加载预合成音频元数据到页面（不含 PCM base64，避免 ARG_MAX）
@@ -207,6 +198,23 @@ if echo "$EVAL_META_OUT" | grep -q "LOADED_UTTERANCES"; then
 else
     fail "加载预合成音频元数据失败"
     echo "  输出: $EVAL_META_OUT"
+fi
+
+# 2d. 检查 WebSocket 连接
+sleep 3  # Give frontend time to connect
+WS_CHECK=$(run_ab $EVAL_TIMEOUT eval "
+  (function() {
+    // Check if frontend has connected via WebSocket
+    var hasConnected = document.body.innerText.includes('已连接') || 
+                      document.body.innerText.includes('Connected');
+    console.log('WS_CHECK:' + hasConnected);
+  })();
+" 2>&1)
+if echo "$WS_CHECK" | grep -q "WS_CHECK:true"; then
+    pass "WebSocket 连接已建立"
+else
+    # Not a hard failure — the page might use different status text
+    skip "WebSocket 状态不确定（继续测试）"
 fi
 
 echo ""
@@ -238,33 +246,33 @@ inject_pcm() {
 
     info "注入 PCM 数据（$label, utterance $idx）..."
 
-    # 将 base64 PCM 解码为 Float32 并注入（通过 stdin 管道避免 ARG_MAX）
+    # 直接使用 pcm_float32_base64，通过 atob 解码，避免 Python 转 Float32 数组字面量
+    # base64 编码约为原始大小的 1.3x，比数组字面量（~10x）紧凑得多
     PYTHON_JS=$(python3 -c "
-import json, base64, struct
-
+import json, base64
 with open('$FIXTURE_AUDIO') as f:
     data = json.load(f)
-
 utterances = data.get('utterances', [])
 if $idx < len(utterances):
     u = utterances[$idx]
-    b64 = u.get('pcm_base64', '')
+    b64 = u.get('pcm_float32_base64', '')
     if b64:
-        raw = base64.b64decode(b64)
-        n_samples = len(raw) // 2
-        samples = struct.unpack('<' + 'h' * n_samples, raw)
-        float_samples = [s / 32768.0 for s in samples]
-        vals = ','.join(str(v) for v in float_samples)
-        print(f'void (function() {{ var arr = new Float32Array([{vals}]); window.__mockAudio.setAudio(arr); window.__mockAudio.startFeeding(); }})();')
-        print(f'\"INJECT_OK:{n_samples}\"')
+        print(f'''(function() {{
+  var raw = atob(\"{b64}\");
+  var bytes = new Uint8Array(raw.length);
+  for (var i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+  var float32 = new Float32Array(bytes.buffer);
+  window.__mockAudio.setAudio(float32);
+  window.__mockAudio.startFeeding();
+  console.log(\"INJECT_OK:\" + float32.length);
+}})();''')
     else:
-        print('console.error(\"NO_PCM_DATA\");')
+        print('console.error(\"NO_FLOAT32_PCM_DATA\");')
 else:
     print('console.error(\"INDEX_OUT_OF_RANGE\");')
 " 2>/dev/null)
     PY_LEN=$(echo "$PYTHON_JS" | wc -c)
-    PY_LINES=$(echo "$PYTHON_JS" | wc -l)
-    info "Python generated ${PY_LINES} lines, ${PY_LEN} bytes"
+    info "Generated JS: ${PY_LEN} bytes"
     INJECT_OUT=$(echo "$PYTHON_JS" | run_ab $EVAL_TIMEOUT eval --stdin 2>&1)
     if echo "$INJECT_OUT" | grep -q "INJECT_OK"; then
         SAMPLE_COUNT=$(echo "$INJECT_OUT" | rg -o 'INJECT_OK:\d+' | rg -o '\d+')
@@ -272,7 +280,7 @@ else:
         return 0
     else
         fail "PCM 数据注入失败（$label）"
-        echo "  输出: $INJECT_OUT"
+        echo "  输出: $(echo "$INJECT_OUT" | tail -5)"
         return 1
     fi
 }
