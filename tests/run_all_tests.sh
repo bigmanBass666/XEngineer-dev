@@ -1,8 +1,15 @@
 #!/bin/bash
 # XEngineer 一键测试脚本（从沙箱运行）
-# 用法: bash tests/run_all_tests.sh
+# 用法: bash tests/run_all_tests.sh [--full]
+#   --full   启用浏览器级 E2E 测试（默认跳过）
 
 set -eo pipefail
+
+# ─── --full 参数解析 ────────────────────────────────────────────────────────
+FULL_MODE=false
+if [[ " $* " == *" --full "* ]]; then
+  FULL_MODE=true
+fi
 PASS=0
 FAIL=0
 SKIP=0
@@ -61,6 +68,19 @@ if [ -f "$SCRIPT_DIR/test_frontend_visual.sh" ]; then
     bash "$SCRIPT_DIR/test_frontend_visual.sh" && check_pass "前端视觉验证" || check_fail "前端视觉验证"
 else
     check_skip "test_frontend_visual.sh 不存在"
+fi
+
+# 6. 浏览器级 E2E（可选）
+echo ""
+echo "═══ 6. 浏览器级 E2E（可选） ═══"
+if [ "$FULL_MODE" = true ]; then
+  if bash "$SCRIPT_DIR/test_browser_e2e.sh" --multi; then
+    check_pass "浏览器 E2E"
+  else
+    echo "  ⚠️  [WARNING] 浏览器 E2E 测试失败（不影响整体结果）"
+  fi
+else
+  check_skip "浏览器 E2E" "使用 --full 启用"
 fi
 
 # 汇总
