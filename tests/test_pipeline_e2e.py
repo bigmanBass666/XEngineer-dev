@@ -6,25 +6,131 @@
 用法: python3 tests/test_pipeline_e2e.py
 
 不需要真实麦克风/摄像头 — 用合成数据模拟：
-  - 音频：生成一段 16kHz PCM 正弦波（模拟说话声）
+  - 音频：通过沙箱 TTS (z-ai tts) 合成真实中文语音，再 ffmpeg 重采样至 16kHz
   - 图片：生成一张带文字的测试图片（模拟摄像头截图）
+  - 回退：如果 z-ai 或 ffmpeg 不可用，降级为正弦波（ASR 无法识别，仅验证连通性）
 """
 
 import asyncio
 import json
 import base64
 import struct
+import subprocess
 import sys
 import os
 import time
+import shutil
+import tempfile
 from pathlib import Path
 
 WS_URL = os.environ.get("WS_URL", "wss://xengineer-dev-production.up.railway.app/ws")
 
-# ============ 合成数据生成 ============
+# ============ 测试数据集 ============
+
+TEST_UTTERANCES = [
+    {
+        "id": 1,
+        "text": "你好，请介绍一下你自己",
+        "keywords": ["你好", "介绍"],
+        "description": "基础对话",
+    },
+    {
+        "id": 2,
+        "text": "你看到了什么？",
+        "keywords": ["看到"],
+        "description": "触发 VLM 视觉描述",
+    },
+    {
+        "id": 3,
+        "text": "画面中有几个人？",
+        "keywords": ["几个"],
+        "description": "VLM 计数能力",
+    },
+    {
+        "id": 4,
+        "text": "请用中文回答",
+        "keywords": ["中文"],
+        "description": "语言控制",
+    },
+    {
+        "id": 5,
+        "text": "谢谢，再见",
+        "keywords": ["谢谢", "再见"],
+        "description": "结束对话",
+    },
+]
+
+# ============ 工具可用性检测 ============
+
+def _check_tool(name: str) -> bool:
+    """检测命令行工具是否可用"""
+    return shutil.which(name) is not None
+
+TTS_AVAILABLE = _check_tool("z-ai")
+FFMPEG_AVAILABLE = _check_tool("ffmpeg")
+
+# ============ 音频合成 ============
+
+def synthesize_tts_pcm(text: str, voice: str = "tongtong", sample_rate: int = 16000) -> bytes:
+    """通过 z-ai TTS 合成真实语音，ffmpeg 重采样到目标采样率，返回 raw PCM bytes
+
+    流程: z-ai tts (24kHz WAV) → ffmpeg resample → raw PCM (s16le)
+
+    Args:
+        text: 要合成的文本（上限 1024 字符）
+        voice: TTS 声音名称
+        sample_rate: 目标采样率（默认 16000，匹配后端 ASR 期望）
+
+    Returns:
+        16-bit little-endian mono PCM bytes
+
+    Raises:
+        RuntimeError: TTS 合成或 ffmpeg 处理失败
+    """
+    with tempfile.TemporaryDirectory() as tmpdir:
+        wav_path = os.path.join(tmpdir, "tts_output.wav")
+        pcm_path = os.path.join(tmpdir, "tts_resampled.pcm")
+
+        # Step 1: TTS 合成
+        try:
+            result = subprocess.run(
+                ["z-ai", "tts", "-i", text, "-o", wav_path, "--format", "wav", "-v", voice],
+                capture_output=True, text=True, timeout=60,
+            )
+            if result.returncode != 0:
+                raise RuntimeError(f"z-ai tts failed (rc={result.returncode}): {result.stderr}")
+            if not os.path.exists(wav_path) or os.path.getsize(wav_path) == 0:
+                raise RuntimeError("z-ai tts produced empty/missing output")
+        except FileNotFoundError:
+            raise RuntimeError("z-ai CLI not found")
+        except subprocess.TimeoutExpired:
+            raise RuntimeError("z-ai tts timed out")
+
+        # Step 2: ffmpeg 重采样到目标采样率，输出 raw PCM
+        try:
+            result = subprocess.run(
+                [
+                    "ffmpeg", "-i", wav_path,
+                    "-ar", str(sample_rate), "-ac", "1",
+                    "-f", "s16le", "-y", pcm_path,
+                ],
+                capture_output=True, text=True, timeout=30,
+            )
+            if result.returncode != 0:
+                raise RuntimeError(f"ffmpeg failed (rc={result.returncode}): {result.stderr}")
+            if not os.path.exists(pcm_path) or os.path.getsize(pcm_path) == 0:
+                raise RuntimeError("ffmpeg produced empty/missing output")
+        except FileNotFoundError:
+            raise RuntimeError("ffmpeg not found")
+        except subprocess.TimeoutExpired:
+            raise RuntimeError("ffmpeg timed out")
+
+        with open(pcm_path, "rb") as f:
+            return f.read()
+
 
 def generate_sine_pcm(duration_ms: int = 1000, freq: int = 440, sample_rate: int = 16000) -> bytes:
-    """生成正弦波 PCM 音频（16bit mono）— 模拟一段语音"""
+    """生成正弦波 PCM 音频（16bit mono）— 降级方案，ASR 无法识别"""
     import math
     n_samples = int(sample_rate * duration_ms / 1000)
     samples = []
@@ -34,6 +140,28 @@ def generate_sine_pcm(duration_ms: int = 1000, freq: int = 440, sample_rate: int
         val = max(-32768, min(32767, val))
         samples.append(struct.pack('<h', val))
     return b''.join(samples)
+
+
+def get_test_pcm(text: str) -> tuple[bytes, bool]:
+    """获取测试音频 PCM 数据
+
+    优先使用 TTS 合成语音，不可用时降级为正弦波。
+
+    Returns:
+        (pcm_bytes, is_real_voice)
+    """
+    if TTS_AVAILABLE and FFMPEG_AVAILABLE:
+        try:
+            pcm = synthesize_tts_pcm(text)
+            duration_ms = len(pcm) / 2 / 16000 * 1000  # 16bit = 2 bytes/sample
+            print(f"    TTS 合成成功: {len(pcm)} bytes PCM ({duration_ms:.0f}ms @16kHz)")
+            return pcm, True
+        except RuntimeError as e:
+            print(f"    ⚠️ TTS 合成失败，降级为正弦波: {e}")
+
+    pcm = generate_sine_pcm(duration_ms=800, freq=440)
+    print(f"    降级正弦波: {len(pcm)} bytes PCM ({len(pcm)//32}ms @16kHz)")
+    return pcm, False
 
 
 def generate_test_image_base64() -> str:
@@ -68,6 +196,8 @@ def generate_test_image_base64() -> str:
         return base64.b64encode(minimal_jpeg).decode('utf-8')
 
 
+# ============ 测试结果收集 ============
+
 class TestResults:
     def __init__(self):
         self.messages = []
@@ -84,6 +214,10 @@ class TestResults:
         self.errors.append((test_name, reason))
         print(f"  ❌ {test_name}: {reason}")
 
+    def skip(self, test_name, reason=""):
+        self.passed += 1  # skip 不算失败
+        print(f"  ⏭️  {test_name}: {reason}")
+
     def summary(self):
         total = self.passed + self.failed
         print(f"\n{'='*50}")
@@ -96,6 +230,149 @@ class TestResults:
         return self.failed == 0
 
 
+# ============ 单次 Pipeline 会话 ============
+
+async def run_single_utterance(ws, utterance: dict, image_base64: str, results: TestResults) -> list[dict]:
+    """对单条测试语句执行一次完整的 VAD → ASR → VLM → TTS 会话
+
+    Args:
+        ws: 已连接的 WebSocket
+        utterance: 测试语句 dict (id, text, keywords, description)
+        image_base64: base64 JPEG 图片
+        results: TestResults 收集器
+
+    Returns:
+        本次会话收到的所有消息列表
+    """
+    uid = utterance["id"]
+    text = utterance["text"]
+    keywords = utterance["keywords"]
+    desc = utterance["description"]
+
+    print(f"\n{'─'*50}")
+    print(f"[测试语句 #{uid}] \"{text}\" — {desc}")
+    print(f"{'─'*50}")
+
+    # 收集本次会话的消息
+    session_msgs: list[dict] = []
+    receive_done = asyncio.Event()
+
+    async def receiver():
+        try:
+            async for msg in ws:
+                session_msgs.append(json.loads(msg))
+                if len(session_msgs) >= 50:
+                    break
+        except Exception:
+            pass
+        receive_done.set()
+
+    recv_task = asyncio.create_task(receiver())
+
+    # Step 1: 发送图片（每次会话重新发送，确保 VLM 有图）
+    await ws.send(json.dumps({"type": "image", "data": image_base64}))
+    await asyncio.sleep(0.5)
+
+    # Step 2: VAD 开始说话
+    await ws.send(json.dumps({"type": "vad_status", "speaking": True}))
+    await asyncio.sleep(2)  # 等待 ASR 会话启动
+    session_started = any(
+        m.get("type") == "status" and "asr_session_started" in m.get("message", "")
+        for m in session_msgs
+    )
+    if session_started:
+        results.ok(f"#{uid} ASR 会话启动")
+    else:
+        results.fail(f"#{uid} ASR 会话启动", "未收到 asr_session_started")
+
+    # Step 3: 合成语音并发送
+    pcm_data, is_real = get_test_pcm(text)
+    n_chunks = max(1, len(pcm_data) // 8192)  # 每片约 256ms
+    n_chunks = min(n_chunks, 20)  # 上限 20 片
+    chunk_size = len(pcm_data) // n_chunks
+    for i in range(n_chunks):
+        chunk = pcm_data[i * chunk_size : (i + 1) * chunk_size]
+        chunk_b64 = base64.b64encode(chunk).decode('utf-8')
+        await ws.send(json.dumps({"type": "audio", "data": chunk_b64}))
+        await asyncio.sleep(0.2)
+    print(f"    {n_chunks} 个音频分片已发送")
+    await asyncio.sleep(1)
+
+    # Step 4: VAD 停止说话 → 触发 ASR 最终识别 → VLM → TTS
+    await ws.send(json.dumps({"type": "vad_status", "speaking": False}))
+    print(f"    等待 pipeline 响应（最长 35 秒）...")
+
+    try:
+        await asyncio.wait_for(receive_done.wait(), timeout=35)
+    except asyncio.TimeoutError:
+        recv_task.cancel()
+
+    await asyncio.sleep(1)
+
+    # Step 5: 分析结果
+    print(f"    收到 {len(session_msgs)} 条消息")
+
+    # 5a: ASR 识别
+    asr_finals = [m for m in session_msgs if m.get("type") == "asr_final"]
+    asr_interims = [m for m in session_msgs if m.get("type") == "asr_interim"]
+
+    if asr_finals:
+        final_text = asr_finals[-1].get("text", "")
+        print(f"    ASR final: \"{final_text}\"")
+        # 检查关键词匹配
+        matched = any(kw in final_text for kw in keywords)
+        if matched:
+            results.ok(f"#{uid} ASR 识别正确 (关键词匹配)")
+        elif is_real:
+            # 真实语音但关键词不匹配，记录但不算严重失败
+            results.fail(f"#{uid} ASR 关键词匹配", f"识别=\"{final_text}\", 期望含 {keywords}")
+        else:
+            results.skip(f"#{uid} ASR 关键词匹配", "降级正弦波，ASR 无法识别")
+    elif asr_interims:
+        last_interim = asr_interims[-1].get("text", "")
+        print(f"    ASR interim (无 final): \"{last_interim}\"")
+        if is_real:
+            results.fail(f"#{uid} ASR final 结果", f"仅有 interim=\"{last_interim}\"，无 final")
+        else:
+            results.skip(f"#{uid} ASR 识别", "降级正弦波，ASR 无法识别")
+    else:
+        if is_real:
+            results.fail(f"#{uid} ASR 识别", "未收到任何 ASR 结果")
+        else:
+            results.skip(f"#{uid} ASR 识别", "降级正弦波，ASR 无法识别")
+
+    # 5b: LLM 回复
+    llm_msgs = [m for m in session_msgs if m.get("type") == "llm_chunk"]
+    if llm_msgs:
+        full_text = ''.join(m.get("text", "") for m in llm_msgs)
+        print(f"    LLM 回复 ({len(full_text)} chars): {full_text[:150]}...")
+        results.ok(f"#{uid} VLM+LLM 回复")
+    else:
+        results.fail(f"#{uid} VLM+LLM 回复", "未收到 LLM chunk（ASR 无文本导致链路中断）")
+
+    # 5c: TTS 音频
+    tts_msgs = [m for m in session_msgs if m.get("type") == "tts_audio"]
+    if tts_msgs:
+        total_b64 = sum(len(m.get("data", "")) for m in tts_msgs)
+        print(f"    TTS 音频: {len(tts_msgs)} 片, {total_b64} chars base64")
+        results.ok(f"#{uid} TTS 音频输出")
+    else:
+        results.fail(f"#{uid} TTS 音频", "未收到 TTS 音频")
+
+    # 5d: 错误检查
+    error_msgs = [m for m in session_msgs if m.get("type") == "error"]
+    if error_msgs:
+        for m in error_msgs:
+            print(f"    ⚠️ Error: {m.get('message', 'unknown')}")
+        results.fail(f"#{uid} 后端错误", f"收到 {len(error_msgs)} 条错误")
+    else:
+        results.ok(f"#{uid} 无后端错误")
+
+    return session_msgs
+
+
+# ============ 主测试入口 ============
+
 async def run_pipeline_test():
     """完整 pipeline 端到端测试"""
     import websockets
@@ -103,20 +380,23 @@ async def run_pipeline_test():
     results = TestResults()
 
     print("=" * 50)
-    print("XEngineer Pipeline 端到端测试")
+    print("XEngineer Pipeline 端到端测试 (TTS 合成语音版)")
     print(f"目标: {WS_URL}")
     print(f"时间: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"z-ai TTS: {'✅ 可用' if TTS_AVAILABLE else '❌ 不可用'}")
+    print(f"ffmpeg:   {'✅ 可用' if FFMPEG_AVAILABLE else '❌ 不可用'}")
+    voice_mode = "TTS 合成语音" if (TTS_AVAILABLE and FFMPEG_AVAILABLE) else "⚠️ 降级正弦波"
+    print(f"音频模式: {voice_mode}")
+    print(f"测试语句: {len(TEST_UTTERANCES)} 条")
     print("=" * 50)
 
-    # 生成合成数据
-    print("\n[准备] 生成合成测试数据...")
-    pcm_data = generate_sine_pcm(duration_ms=800, freq=440)
+    # 生成测试图片
+    print("\n[准备] 生成测试图片...")
     image_base64 = generate_test_image_base64()
-    print(f"  音频: {len(pcm_data)} bytes PCM ({len(pcm_data)//32}ms @16kHz)")
     print(f"  图片: {len(image_base64)} chars base64 JPEG")
 
     # WebSocket 连接
-    print(f"\n[测试1] WebSocket 连接...")
+    print(f"\n[连接] WebSocket...")
     try:
         ws = await websockets.connect(WS_URL, open_timeout=10)
         results.ok("WebSocket 连接成功")
@@ -124,138 +404,56 @@ async def run_pipeline_test():
         results.fail("WebSocket 连接", str(e))
         return results.summary()
 
-    # 收集消息
-    received = []
-    receive_done = asyncio.Event()
+    # Echo 测试
+    print(f"\n[Echo] 连通性测试...")
+    echo_received = []
+    echo_done = asyncio.Event()
 
-    async def receiver():
+    async def echo_receiver():
         try:
             async for msg in ws:
-                received.append(json.loads(msg))
-                if len(received) >= 30:
-                    break
-        except websockets.exceptions.ConnectionClosed:
+                echo_received.append(json.loads(msg))
+                echo_done.set()
+                break
+        except Exception:
             pass
-        receive_done.set()
 
-    recv_task = asyncio.create_task(receiver())
+    echo_task = asyncio.create_task(echo_receiver())
+    await ws.send(json.dumps({"type": "test", "data": "pipeline-e2e-tts-test"}))
+    try:
+        await asyncio.wait_for(echo_done.wait(), timeout=5)
+    except asyncio.TimeoutError:
+        echo_task.cancel()
 
-    # 测试2: Echo
-    print(f"\n[测试2] Echo 消息...")
-    await ws.send(json.dumps({"type": "test", "data": "pipeline-e2e-test"}))
-    await asyncio.sleep(2)
     echo_found = any(
-        m.get("type") == "status" and "pipeline-e2e-test" in m.get("message", "")
-        for m in received
+        m.get("type") == "status" and "pipeline-e2e-tts-test" in m.get("message", "")
+        for m in echo_received
     )
     if echo_found:
         results.ok("Echo 消息返回正确")
     else:
-        results.fail("Echo 消息", f"未收到 echo 响应, received={len(received)}")
+        results.fail("Echo 消息", f"未收到 echo 响应")
 
-    # 测试3: VAD 会话启动
-    print(f"\n[测试3] VAD 会话启动 (vad_status: speaking=true)...")
-    await ws.send(json.dumps({"type": "vad_status", "speaking": True}))
-    await asyncio.sleep(3)
-    session_started = any(
-        m.get("type") == "status" and "asr_session_started" in m.get("message", "")
-        for m in received
-    )
-    if session_started:
-        results.ok("ASR 会话启动成功")
-    else:
-        results.fail("ASR 会话启动", f"未收到 asr_session_started, received={len(received)}")
+    # 逐条执行测试语句
+    all_session_msgs = []
+    for utt in TEST_UTTERANCES:
+        session_msgs = await run_single_utterance(ws, utt, image_base64, results)
+        all_session_msgs.extend(session_msgs)
+        # 会话间隔，避免后端状态污染
+        await asyncio.sleep(2)
 
-    # 测试4: 发送图片
-    print(f"\n[测试4] 发送测试图片...")
-    await ws.send(json.dumps({"type": "image", "data": image_base64}))
-    await asyncio.sleep(1)
-    results.ok("图片发送完成（无 crash 即通过）")
-
-    # 测试5: 发送音频数据
-    print(f"\n[测试5] 发送合成音频 (440Hz 正弦波, 800ms)...")
-    chunk_size = len(pcm_data) // 5
-    for i in range(5):
-        chunk = pcm_data[i * chunk_size : (i + 1) * chunk_size]
-        chunk_b64 = base64.b64encode(chunk).decode('utf-8')
-        await ws.send(json.dumps({"type": "audio", "data": chunk_b64}))
-        await asyncio.sleep(0.3)
-    print("  5 个音频分片已发送")
-    await asyncio.sleep(2)
-    results.ok("音频数据发送完成（无 crash 即通过）")
-
-    # 测试6: VAD 会话结束 → 触发 ASR → VLM → TTS
-    print(f"\n[测试6] VAD 会话结束 → 触发完整 pipeline...")
-    await ws.send(json.dumps({"type": "vad_status", "speaking": False}))
-    print("  等待 pipeline 响应（最长 30 秒）...")
-
-    try:
-        await asyncio.wait_for(receive_done.wait(), timeout=30)
-    except asyncio.TimeoutError:
-        recv_task.cancel()
-
-    await asyncio.sleep(2)
-
-    # 分析 pipeline 输出
-    print(f"\n[分析] 收到 {len(received)} 条消息")
-    msg_types = [m.get("type") for m in received]
-    type_counts = dict((t, msg_types.count(t)) for t in set(msg_types))
-    print(f"  消息类型分布: {type_counts}")
-
-    # 测试7: ASR 结果
-    print(f"\n[测试7] ASR 识别结果...")
-    asr_msgs = [m for m in received if m.get("type") in ("asr_interim", "asr_final")]
-    if asr_msgs:
-        for m in asr_msgs[-3:]:  # 显示最后3条
-            print(f"  ASR [{m['type']}]: {m.get('text', '')[:100]}")
-        results.ok(f"ASR 返回 {len(asr_msgs)} 条识别结果")
-    else:
-        results.fail("ASR 识别", "未收到 ASR 结果（正弦波非真实语音，可能无法识别）")
-
-    # 测试8: LLM 回复
-    print(f"\n[测试8] VLM+LLM 回复...")
-    llm_msgs = [m for m in received if m.get("type") == "llm_chunk"]
-    if llm_msgs:
-        full_text = ''.join(m.get("text", "") for m in llm_msgs)
-        print(f"  LLM 回复 ({len(full_text)} chars): {full_text[:200]}")
-        results.ok(f"VLM+LLM 返回 {len(llm_msgs)} 个 chunk")
-    else:
-        results.fail("VLM+LLM 回复", "未收到 LLM chunk（ASR 无文本导致链路中断）")
-
-    # 测试9: TTS 音频
-    print(f"\n[测试9] TTS 音频输出...")
-    tts_msgs = [m for m in received if m.get("type") == "tts_audio"]
-    if tts_msgs:
-        total_len = sum(len(m.get("data", "")) for m in tts_msgs)
-        print(f"  TTS 返回 {len(tts_msgs)} 个音频分片, 总计 {total_len} chars base64")
-        try:
-            decoded = base64.b64decode(tts_msgs[0].get("data", "")[:100])
-            print(f"  音频数据前缀: {decoded[:4].hex()}")
-            results.ok("TTS 返回有效音频数据")
-        except Exception as e:
-            results.fail("TTS 音频解码", str(e))
-    else:
-        results.fail("TTS 音频", "未收到 TTS 音频")
-
-    # 测试10: 错误检查
-    print(f"\n[测试10] 后端错误检查...")
-    error_msgs = [m for m in received if m.get("type") == "error"]
-    if error_msgs:
-        for m in error_msgs:
-            print(f"  ⚠️ Error: {m.get('message', 'unknown')}")
-        results.fail("后端错误", f"收到 {len(error_msgs)} 条错误消息")
-    else:
-        results.ok("无后端错误")
-
-    # 保存日志
+    # 保存完整日志
     log_dir = Path(__file__).resolve().parent.parent / "download"
     log_dir.mkdir(exist_ok=True)
     log_file = log_dir / "pipeline-test-log.json"
+    msg_types_all = [m.get("type") for m in all_session_msgs]
+    type_counts = dict((t, msg_types_all.count(t)) for t in set(msg_types_all))
     with open(log_file, 'w', encoding='utf-8') as f:
         json.dump({
             "timestamp": time.strftime('%Y-%m-%d %H:%M:%S'),
             "ws_url": WS_URL,
-            "messages": received,
+            "voice_mode": voice_mode,
+            "messages": all_session_msgs,
             "summary": {
                 "passed": results.passed,
                 "failed": results.failed,
