@@ -119,7 +119,8 @@ class AgnesClient:
                         continue
 
         except httpx.HTTPStatusError as e:
-            logger.error(f"Agnes API HTTP 错误: {e.response.status_code} - {e.response.text}")
+            body = await e.response.aread()
+            logger.error(f"Agnes API HTTP 错误 (stream): {e.response.status_code} - {body.decode(errors='replace')}")
             raise
         except httpx.RequestError as e:
             logger.error(f"Agnes API 请求异常: {e}")
@@ -162,7 +163,8 @@ class AgnesClient:
             data = resp.json()
             return data["choices"][0]["message"]["content"]
         except httpx.HTTPStatusError as e:
-            logger.error(f"Agnes API HTTP 错误: {e.response.status_code} - {e.response.text}")
+            body = await e.response.aread()
+            logger.error(f"Agnes API HTTP 错误 (chat): {e.response.status_code} - {body.decode(errors='replace')}")
             raise
         except httpx.RequestError as e:
             logger.error(f"Agnes API 请求异常: {e}")
