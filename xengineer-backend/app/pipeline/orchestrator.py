@@ -201,7 +201,7 @@ class PipelineOrchestrator:
         注意：不在此处关闭全局 agnes client。
         agnes client 的生命周期由 lifespan() 管理（应用退出时关闭）。
         """
-        logger.info("Orchestrator cleanup")
+        logger.info("Orchestrator cleanup (v2-fix: agnes NOT closed here)")
 
         # 停止可能正在运行的 ASR 会话
         if self._session_active:
