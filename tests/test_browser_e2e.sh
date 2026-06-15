@@ -239,15 +239,15 @@ inject_pcm() {
     info "注入 PCM 数据（$label, utterance $idx）..."
 
     # 将 base64 PCM 解码为 Float32 并注入（通过 stdin 管道避免 ARG_MAX）
-    INJECT_OUT=$(python3 -c "
+    PYTHON_JS=$(python3 -c "
 import json, base64, struct
 
 with open('$FIXTURE_AUDIO') as f:
     data = json.load(f)
 
 utterances = data.get('utterances', [])
-if idx < len(utterances):
-    u = utterances[idx]
+if $idx < len(utterances):
+    u = utterances[$idx]
     b64 = u.get('pcm_base64', '')
     if b64:
         raw = base64.b64decode(b64)
@@ -255,12 +255,17 @@ if idx < len(utterances):
         samples = struct.unpack('<' + 'h' * n_samples, raw)
         float_samples = [s / 32768.0 for s in samples]
         vals = ','.join(str(v) for v in float_samples)
-        print(f'(function() {{ var arr = new Float32Array([{vals}]); window.__mockAudio.setAudio(arr); window.__mockAudio.startFeeding(); return \"INJECT_OK:{n_samples}\"; }})();')
+        print(f'void (function() {{ var arr = new Float32Array([{vals}]); window.__mockAudio.setAudio(arr); window.__mockAudio.startFeeding(); }})();')
+        print(f'\"INJECT_OK:{n_samples}\"')
     else:
         print('console.error(\"NO_PCM_DATA\");')
 else:
     print('console.error(\"INDEX_OUT_OF_RANGE\");')
-" 2>/dev/null | run_ab $EVAL_TIMEOUT eval --stdin 2>&1)
+" 2>/dev/null)
+    PY_LEN=$(echo "$PYTHON_JS" | wc -c)
+    PY_LINES=$(echo "$PYTHON_JS" | wc -l)
+    info "Python generated ${PY_LINES} lines, ${PY_LEN} bytes"
+    INJECT_OUT=$(echo "$PYTHON_JS" | run_ab $EVAL_TIMEOUT eval --stdin 2>&1)
     if echo "$INJECT_OUT" | grep -q "INJECT_OK"; then
         SAMPLE_COUNT=$(echo "$INJECT_OUT" | rg -o 'INJECT_OK:\d+' | rg -o '\d+')
         pass "PCM 数据注入成功（$label, $SAMPLE_COUNT samples）"
@@ -292,19 +297,24 @@ run_conversation_round() {
         # 尝试通过 snapshot 找到按钮
         info "尝试通过 snapshot 定位录音按钮..."
         SNAPSHOT=$(run_ab 5 snapshot -i 2>&1)
-        # 查找可能包含"录音"或"mic"相关的 ref
-        MIC_REF=$(echo "$SNAPSHOT" | rg -o '@e_\S+' | head -5 | tr '\n' ' ')
+        # 从 snapshot 中提取"录音"按钮的 ref（格式: button "开始录音" [ref=e4]）
+        MIC_REF=$(echo "$SNAPSHOT" | rg 'button.*录音.*\[ref=(\w+)\]' -o -r '$1' | head -1)
+        if [ -z "$MIC_REF" ]; then
+            # 也尝试匹配 mic/audio 等关键词
+            MIC_REF=$(echo "$SNAPSHOT" | rg -i 'button.*(mic|audio).*\[ref=(\w+)\]' -o -r '$2' | head -1)
+        fi
         if [ -n "$MIC_REF" ]; then
-            info "找到候选 refs: $MIC_REF"
-            FIRST_REF=$(echo "$MIC_REF" | awk '{print $1}')
-            CLICK_OUT=$(run_ab 5 click "$FIRST_REF" 2>&1)
+            CLICK_REF="@${MIC_REF}"
+            info "找到录音按钮 ref: $CLICK_REF"
+            CLICK_OUT=$(run_ab 5 click "$CLICK_REF" 2>&1)
             if echo "$CLICK_OUT" | grep -qi "__AB_TIMEOUT_OR_ERROR__\|error"; then
                 fail "无法点击录音按钮"
             else
-                pass "录音按钮已点击（ref: $FIRST_REF）"
+                pass "录音按钮已点击（ref: $CLICK_REF）"
             fi
         else
             fail "未找到录音按钮"
+            echo "  snapshot: $SNAPSHOT" | head -5
         fi
     else
         pass "麦克风按钮已点击"
