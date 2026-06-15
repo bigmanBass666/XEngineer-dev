@@ -42,7 +42,7 @@ fi
 
 # --- 超时 ---
 OPEN_TIMEOUT=15
-EVAL_TIMEOUT=10
+EVAL_TIMEOUT=30
 WAIT_VOICE=8        # 等待语音处理完成
 WAIT_RESPONSE=15    # 等待 AI 响应
 WAIT_BARGEIN=5      # 打断等待
@@ -246,41 +246,45 @@ inject_pcm() {
 
     info "注入 PCM 数据（$label, utterance $idx）..."
 
-    # 直接使用 pcm_float32_base64，通过 atob 解码，避免 Python 转 Float32 数组字面量
-    # base64 编码约为原始大小的 1.3x，比数组字面量（~10x）紧凑得多
-    PYTHON_JS=$(python3 -c "
-import json, base64
-with open('$FIXTURE_AUDIO') as f:
+    # 分两步注入 base64 → Float32Array：
+    # 步骤 1: 用 python3 -c 读取 base64，生成赋值 JS 存到 window.__mockAudio._pendingBase64
+    # 步骤 2: 用 eval 执行 atob 解码 + setAudio + startFeeding
+    python3 -c "
+import json, sys
+fixture = '$FIXTURE_AUDIO'
+idx = int('$idx')
+with open(fixture) as f:
     data = json.load(f)
-utterances = data.get('utterances', [])
-if $idx < len(utterances):
-    u = utterances[$idx]
-    b64 = u.get('pcm_float32_base64', '')
-    if b64:
-        print(f'''(function() {{
-  var raw = atob(\"{b64}\");
-  var bytes = new Uint8Array(raw.length);
-  for (var i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
-  var float32 = new Float32Array(bytes.buffer);
-  window.__mockAudio.setAudio(float32);
-  window.__mockAudio.startFeeding();
-  console.log(\"INJECT_OK:\" + float32.length);
-}})();''')
-    else:
-        print('console.error(\"NO_FLOAT32_PCM_DATA\");')
-else:
-    print('console.error(\"INDEX_OUT_OF_RANGE\");')
-" 2>/dev/null)
-    PY_LEN=$(echo "$PYTHON_JS" | wc -c)
-    info "Generated JS: ${PY_LEN} bytes"
-    INJECT_OUT=$(echo "$PYTHON_JS" | run_ab $EVAL_TIMEOUT eval --stdin 2>&1)
-    if echo "$INJECT_OUT" | grep -q "INJECT_OK"; then
-        SAMPLE_COUNT=$(echo "$INJECT_OUT" | rg -o 'INJECT_OK:\d+' | rg -o '\d+')
+u = data['utterances'][idx]
+b64 = u.get('pcm_float32_base64', '')
+js = 'window.__mockAudio._pendingBase64 = \"' + b64 + '\";\n'
+sys.stdout.write(js)
+sys.stdout.write('\"SET_VAR_OK\";\n')
+" > /tmp/mock_inject_$$.js 2>/dev/null
+    if [ ! -s /tmp/mock_inject_$$.js ]; then
+        fail "Python 生成注入 JS 失败（$label）"
+        return 1
+    fi
+    ASSIGN_JS=$(cat /tmp/mock_inject_$$.js)
+    rm -f /tmp/mock_inject_$$.js
+    SET_VAR_OUT=$(echo "$ASSIGN_JS" | run_ab $EVAL_TIMEOUT eval --stdin 2>&1)
+    if echo "$SET_VAR_OUT" | grep -q "SET_VAR_OK"; then
+        info "base64 字符串已注入（$(echo "$ASSIGN_JS" | wc -c | tr -d ' ') bytes JS）"
+    else
+        fail "base64 字符串注入失败（$label）"
+        echo "  输出: $(echo "$SET_VAR_OUT" | tail -3)"
+        return 1
+    fi
+    # 步骤 2: 解码 base64 → Float32Array → setAudio → startFeeding
+    DECODE_JS='(function(){var b=window.__mockAudio._pendingBase64;if(!b){console.error("NO_DATA");return;}var r=atob(b);var a=new Uint8Array(r.length);for(var i=0;i<r.length;i++)a[i]=r.charCodeAt(i);var f=new Float32Array(a.buffer);window.__mockAudio.setAudio(f);window.__mockAudio.startFeeding();delete window.__mockAudio._pendingBase64;console.log("INJECT_OK:"+f.length);})();'
+    DECODE_OUT=$(run_ab $EVAL_TIMEOUT eval "$DECODE_JS" 2>&1)
+    if echo "$DECODE_OUT" | grep -q "INJECT_OK"; then
+        SAMPLE_COUNT=$(echo "$DECODE_OUT" | rg -o 'INJECT_OK:\d+' | rg -o '\d+')
         pass "PCM 数据注入成功（$label, $SAMPLE_COUNT samples）"
         return 0
     else
         fail "PCM 数据注入失败（$label）"
-        echo "  输出: $(echo "$INJECT_OUT" | tail -5)"
+        echo "  输出: $(echo "$DECODE_OUT" | tail -5)"
         return 1
     fi
 }
