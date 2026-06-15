@@ -199,7 +199,7 @@ for u in utterances:
         'sample_rate': u.get('sample_rate', 16000),
     })
 print(f'window.__testUtterances = {json.dumps(meta_only, ensure_ascii=False)};')
-print(f'console.log(\"LOADED_UTTERANCES:{len(meta_only)}\");')
+print(f'\"LOADED_UTTERANCES:{len(meta_only)}\"')
 " 2>/dev/null | run_ab $EVAL_TIMEOUT eval --stdin 2>&1)
 if echo "$EVAL_META_OUT" | grep -q "LOADED_UTTERANCES"; then
     LOADED_COUNT=$(echo "$EVAL_META_OUT" | rg -o 'LOADED_UTTERANCES:\d+' | rg -o '\d+')
@@ -255,7 +255,7 @@ if idx < len(utterances):
         samples = struct.unpack('<' + 'h' * n_samples, raw)
         float_samples = [s / 32768.0 for s in samples]
         vals = ','.join(str(v) for v in float_samples)
-        print(f'(function() {{ var arr = new Float32Array([{vals}]); window.__mockAudio.setAudio(arr); window.__mockAudio.startFeeding(); console.log(\"INJECT_OK:{n_samples}\"); }})();')
+        print(f'(function() {{ var arr = new Float32Array([{vals}]); window.__mockAudio.setAudio(arr); window.__mockAudio.startFeeding(); return \"INJECT_OK:{n_samples}\"; }})();')
     else:
         print('console.error(\"NO_PCM_DATA\");')
 else:
@@ -324,7 +324,7 @@ run_conversation_round() {
     info "注入静音..."
     SILENCE_OUT=$(run_ab $EVAL_TIMEOUT eval "
         window.__mockAudio.stopFeeding();
-        console.log('SILENCE_OK');
+        'SILENCE_OK';
     " 2>&1)
     if echo "$SILENCE_OUT" | grep -q "SILENCE_OK"; then
         pass "静音注入成功"
