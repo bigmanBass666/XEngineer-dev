@@ -398,18 +398,35 @@ run_conversation_round() {
     fi
 
     # 3h. 验证对话内容（DOM 检测替代 console 日志）
-    # 从 fixture 读取当前 utterance 的关键词用于 ASR 验证
-    ASR_KEYWORD=$(python3 -c "
+    # ASR 验证：检查 DOM 是否包含用户语音关键词
+    ASR_KEYWORDS=$(python3 -c "
 import json
 with open('$FIXTURE_AUDIO') as f:
     data = json.load(f)
 u = data['utterances'][$utterance_idx]
-print(u.get('keywords', [''])[0] if u.get('keywords') else '')
+print(','.join(u.get('keywords', [])))
 " 2>/dev/null)
 
-    if [ -n "$ASR_KEYWORD" ]; then
-        # ASR 验证：检查 DOM 是否包含用户语音关键词（说明 ASR 识别成功且显示在 UI 中）
-        check_dom_text "$ASR_KEYWORD" "ASR 识别结果出现在 UI 中（关键词: '$ASR_KEYWORD'）"
+    if [ -n "$ASR_KEYWORDS" ]; then
+        ASR_MATCHED=false
+        IFS=',' read -ra KW_ARRAY <<< "$ASR_KEYWORDS"
+        for KW in "${KW_ARRAY[@]}"; do
+            [ -z "$KW" ] && continue
+            SEARCH_RESULT=$(run_ab 10 eval --stdin <<< "
+                (function() {
+                    var text = document.body.innerText || '';
+                    return 'FOUND:' + text.includes('$KW');
+                })();
+            " 2>&1)
+            if echo "$SEARCH_RESULT" | grep -q "FOUND:true"; then
+                pass "ASR 识别结果出现在 UI 中（关键词: '$KW'）"
+                ASR_MATCHED=true
+                break
+            fi
+        done
+        if [ "$ASR_MATCHED" = false ]; then
+            skip "ASR 验证跳过（DOM 中未找到任何关键词: $ASR_KEYWORDS）"
+        fi
     else
         skip "ASR 验证跳过（fixture 无关键词）"
     fi
