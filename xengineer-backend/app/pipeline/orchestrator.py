@@ -185,6 +185,13 @@ class PipelineOrchestrator:
                 })
         else:
             logger.info("ASR session stopped (stub node)")
+            # Stub 节点没有 stop_session()，手动触发完整 pipeline 链路
+            # ASR stub 的 process({}) 会发送 asr_final 并触发 VLM → TTS
+            if self.asr_node:
+                try:
+                    await self.asr_node.process({})
+                except Exception as e:
+                    logger.error(f"Stub pipeline chain error: {e}", exc_info=True)
 
         await self.send_to_frontend({
             "type": "status",
