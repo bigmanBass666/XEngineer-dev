@@ -36,7 +36,7 @@ export function Camera({ onFrame, triggerCapture }: CameraProps) {
       {/* 视频预览 */}
       <video
         ref={videoRef}
-        className="w-full h-full object-cover"
+        className="w-full h-full object-cover" style={{ transform: 'scaleX(-1)' }}
         playsInline
         muted
       />

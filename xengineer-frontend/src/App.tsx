@@ -69,6 +69,16 @@ function App() {
           break
         case 'status':
           console.log('[Status]', msg.message)
+          // 测试消息回显：在对话区显示系统消息
+          if (msg.message.startsWith('WS echo:')) {
+            const echoText = msg.message.replace('WS echo: ', '')
+            setMessages(prev => [...prev, {
+              id: crypto.randomUUID(),
+              role: 'system',
+              content: `测试消息已发送，服务端回显: "${echoText}"`,
+              timestamp: Date.now()
+            }])
+          }
           break
         case 'error':
           console.error('[Error]', msg.message)
@@ -81,6 +91,13 @@ function App() {
 
   // 发送测试消息
   const sendTest = useCallback(() => {
+    // 在对话区显示用户发送的测试消息
+    setMessages(prev => [...prev, {
+      id: crypto.randomUUID(),
+      role: 'user',
+      content: '测试消息: hello from frontend',
+      timestamp: Date.now()
+    }])
     send({ type: 'test', data: 'hello from frontend' })
   }, [send])
 
