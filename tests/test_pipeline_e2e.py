@@ -443,8 +443,8 @@ async def run_pipeline_test():
     all_session_msgs = []
     for utt in TEST_UTTERANCES:
         # Health check: verify WebSocket is still connected
-        if ws.closed:
-            results.fail(f"WebSocket 断开", f"在语句 #{utt['id']} 前检测到连接已关闭")
+        if ws.state.name != "OPEN":
+            results.fail(f"WebSocket 断开", f"在语句 #{utt['id']} 前检测到连接已关闭 (state={ws.state.name})")
             break
         session_msgs = await run_single_utterance(ws, utt, image_base64, results)
         all_session_msgs.extend(session_msgs)
