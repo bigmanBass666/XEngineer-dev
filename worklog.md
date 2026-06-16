@@ -1,5 +1,42 @@
 # Worklog
 
+## 2026-06-17 — 全真视频通话 E2E 测试
+
+### 概述
+模拟真人视频通话全流程，验证 VAD → ASR → VLM → LLM → TTS 完整链路。评委看到的是完整可用的视频对话系统。
+
+### P1: 修复 Railway 构建 (PR #50/#51/#52)
+- **根因**: 删除 railway.json 后 Railway 回退到 Railpack 构建器，Railpack 无法识别项目类型 + mise Python attestation 验证失败
+- **修复**: 添加根目录 Python 文件 + 升级 Python 3.12.8 + 恢复 NIXPACKS 构建器配置
+- **结果**: 后端 `/health` 返回 200
+
+### P2: 修复前端 WS 地址 (PR #49)
+- **根因**: fallback 用 `window.location.hostname` 指向 Netlify 域名，后端在 Railway
+- **修复**: fallback 改为 `wss://xengineer-dev-production.up.railway.app/ws`
+
+### P3: WS 连通验证
+- agent-browser 打开页面，StatusBar 显示"已连接"
+- 发送测试消息收到 WS echo
+
+### P4: Stub 模式全链路 (PR #53)
+- TTS Stub 改为发送真实 mp3（专用 StubASRNode/StubVLMNode/StubTTSNode）
+- 8/8 步骤通过，零 JS 错误
+
+### P5: 真实模式全链路
+- Railway `USE_REAL_NODES=true`，真实 ASR/LLM/TTS 节点
+- Round 1: "你好，请介绍一下你自己" → 火山ASR识别 → Agnes LLM回复 → 火山TTS合成
+- 零 console 错误
+
+### 产出
+- `/home/z/my-project/download/p3-ws-verify/` — WS 连通截图
+- `/home/z/my-project/download/p4-stub-e2e/` — Stub 模式截图+结果
+- `/home/z/my-project/download/p5-real-e2e/` — 真实模式截图+结果
+
+### PR 列表
+#47 测试计划文档, #48 迁移测试脚本, #49 WS修复, #50/#51/#52 Railway构建修复, #53 TTS Stub修复
+
+---
+
 ## 2025-07-16 — 修复浏览器 E2E 测试 5 个 SKIP 项
 
 **分支**: `fix/browser-e2e-skip-items`
