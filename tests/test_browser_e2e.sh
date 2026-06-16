@@ -227,7 +227,38 @@ else
     echo "  输出: $EVAL_META_OUT"
 fi
 
-# 2d. 检查 WebSocket 连接（带重试，使用 return 而非 console.log）
+# 2d. 注入视频帧到 mock hook（用于虚拟摄像头）
+VIDEO_FRAMES_DIR="$SCRIPT_DIR/fixtures/video-frames"
+if [ -d "$VIDEO_FRAMES_DIR" ] && ls "$VIDEO_FRAMES_DIR"/frame_*.jpg &>/dev/null; then
+    VIDEO_FRAMES_JS=$(python3 -c "
+import base64, os, json
+frames_dir = '$VIDEO_FRAMES_DIR'
+frames = []
+for i in range(1, 6):
+    path = os.path.join(frames_dir, f'frame_{i:02d}.jpg')
+    if os.path.exists(path):
+        with open(path, 'rb') as f:
+            b64 = base64.b64encode(f.read()).decode('utf-8')
+            frames.append('data:image/jpeg;base64,' + b64)
+print('window.__mockVideoFrames = ' + json.dumps(frames) + ';')
+print('\"VIDEO_FRAMES_LOADED:\" + str(len(frames)) + \"\";')
+" 2>/dev/null)
+
+    LOAD_FRAMES_OUT=$(echo "$VIDEO_FRAMES_JS" | run_ab $EVAL_TIMEOUT eval --stdin 2>&1)
+    if echo "$LOAD_FRAMES_OUT" | grep -q "VIDEO_FRAMES_LOADED"; then
+        FRAME_COUNT=$(echo "$LOAD_FRAMES_OUT" | rg -o 'VIDEO_FRAMES_LOADED:\d+' | rg -o '\d+')
+        pass "视频帧注入成功（$FRAME_COUNT 帧，640x480 虚拟摄像头）"
+    else
+        skip "视频帧注入失败（继续测试，使用默认画面）"
+        echo "  输出: $(echo "$LOAD_FRAMES_OUT" | tail -3)"
+    fi
+else
+    skip "视频帧目录不存在（$VIDEO_FRAMES_DIR），使用默认画面"
+fi
+
+echo ""
+
+# 2e. 检查 WebSocket 连接（带重试，使用 return 而非 console.log）
 WS_FOUND=false
 for WS_RETRY in 1 2 3; do
     sleep 3

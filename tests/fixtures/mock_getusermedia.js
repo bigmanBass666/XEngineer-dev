@@ -23,7 +23,7 @@
 (function () {
   'use strict';
 
-  // --- Internal state -------------------------------------------------------
+  // --- Internal state (Audio) -------------------------------------------------
   var SAMPLE_RATE = 16000;
   var BUFFER_SIZE = 512; // 512 samples = 32ms at 16kHz
 
@@ -36,6 +36,13 @@
   var pcmOffset = 0;  // current read position in pcmData
   var feeding = false; // whether actively pushing audio (vs silence)
   var started = false; // whether the generator node has been started
+
+  // --- Internal state (Video) -------------------------------------------------
+  var videoCanvas = null;
+  var videoCtx = null;
+  var videoStreamObj = null;
+  var videoFrameIndex = 0;
+  var videoFrameTimer = null;
 
   // --- Logger ---------------------------------------------------------------
   function log(msg) {
@@ -193,20 +200,87 @@
     },
   };
 
+  // --- Ensure Video Stream (canvas-based) -----------------------------------
+  function ensureVideoStream() {
+    if (videoStreamObj) return videoStreamObj;
+
+    // Create off-screen canvas
+    videoCanvas = document.createElement('canvas');
+    videoCanvas.width = 640;
+    videoCanvas.height = 480;
+    videoCtx = videoCanvas.getContext('2d');
+
+    // Draw first frame
+    drawVideoFrame(0);
+
+    // Create captureStream at 0.5 fps (1 frame per 2s)
+    videoStreamObj = videoCanvas.captureStream(0.5);
+    log('Virtual video stream created (640x480, 0.5 fps from canvas)');
+
+    // Rotate frames every 2s to trigger frontend simpleHash change detection
+    var frames = (window.__mockVideoFrames || []);
+    if (frames.length > 1) {
+      videoFrameTimer = setInterval(function () {
+        videoFrameIndex = (videoFrameIndex + 1) % frames.length;
+        drawVideoFrame(videoFrameIndex);
+      }, 2000);
+    }
+
+    return videoStreamObj;
+  }
+
+  function drawVideoFrame(index) {
+    var frames = (window.__mockVideoFrames || []);
+    if (frames.length === 0) {
+      // No frame data — draw placeholder
+      videoCtx.fillStyle = '#496D89';
+      videoCtx.fillRect(0, 0, 640, 480);
+      videoCtx.fillStyle = '#FFFFFF';
+      videoCtx.font = '24px sans-serif';
+      videoCtx.fillText('XEngineer Test Video', 50, 250);
+      return;
+    }
+
+    var dataUrl = frames[index % frames.length];
+    var img = new Image();
+    img.onload = function () {
+      videoCtx.drawImage(img, 0, 0, 640, 480);
+    };
+    img.src = dataUrl;
+  }
+
   // --- Monkey-patch getUserMedia --------------------------------------------
   var originalGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
 
   navigator.mediaDevices.getUserMedia = async function (constraints) {
+    if (constraints && constraints.audio && constraints.video) {
+      // Both audio and video requested — return combined MediaStream
+      log('Intercepted getUserMedia({audio, video}) — returning combined virtual stream.');
+      var audioStream = ensureContext();
+      resumeContext();
+      var videoStream = ensureVideoStream();
+      var audioTrack = audioStream.getAudioTracks()[0];
+      var videoTrack = videoStream.getVideoTracks()[0];
+      if (audioTrack && videoTrack) {
+        return new MediaStream([audioTrack, videoTrack]);
+      }
+      return audioStream;
+    }
     if (constraints && constraints.audio) {
       log('Intercepted getUserMedia({audio: true}) — returning virtual stream.');
       var stream = ensureContext();
       resumeContext();
       return stream;
     }
-    // For video or other constraints, delegate to original implementation
+    if (constraints && constraints.video) {
+      log('Intercepted getUserMedia({video: true}) — returning virtual video stream.');
+      return ensureVideoStream();
+    }
+    // For other constraints, delegate to original implementation
     return originalGetUserMedia(constraints);
   };
 
-  log('getUserMedia hook installed. Virtual audio stream ready.');
+  log('getUserMedia hook installed. Virtual audio + video stream ready.');
   log('API: window.__mockAudio = { setAudio, startFeeding, stopFeeding, getState, reset }');
+  log('API: window.__mockVideoFrames = [data:image/jpeg;base64,...] (set before camera starts)');
 })();
