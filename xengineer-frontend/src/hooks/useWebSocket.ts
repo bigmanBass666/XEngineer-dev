@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import type { ClientMessage, ServerMessage, ConnectionStatus } from '../lib/protocol'
 
-const WS_URL = import.meta.env.VITE_WS_URL || `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.hostname}:8000/ws`
+const WS_URL = import.meta.env.VITE_WS_URL || 'wss://xengineer-dev-production.up.railway.app/ws'
 
 export function useWebSocket() {
   const [status, setStatus] = useState<ConnectionStatus>('disconnected')
