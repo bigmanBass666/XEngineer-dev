@@ -18,7 +18,7 @@ export type ServerMessage =
 // 对话消息（UI 显示用）
 export interface ChatMessage {
   id: string
-  role: 'user' | 'assistant'
+  role: 'user' | 'assistant' | 'system'
   content: string
   timestamp: number
 }

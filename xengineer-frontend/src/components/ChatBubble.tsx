@@ -6,6 +6,18 @@ interface ChatBubbleProps {
 
 export function ChatBubble({ message }: ChatBubbleProps) {
   const isUser = message.role === 'user'
+  const isSystem = message.role === 'system'
+
+  // 系统消息样式
+  if (isSystem) {
+    return (
+      <div className="flex justify-center mb-3">
+        <div className="max-w-[80%] px-4 py-2 rounded-xl text-xs text-gray-400 bg-gray-800 border border-gray-700 text-center">
+          {message.content}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-3`}>
