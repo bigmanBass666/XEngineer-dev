@@ -1,0 +1,14 @@
+# Nixpacks 配置 — 告诉 Nixpacks 这是一个 Python 项目，忽略根目录的 package.json
+# Railway 后端只需要 Python 环境，不需要 Node.js
+
+[phases.setup]
+nixPkgs = ["...", "python311"]
+
+[phases.install]
+cmds = ["pip install -r xengineer-backend/requirements.txt"]
+
+[phases.build]
+cmds = []
+
+[start]
+cmd = "cd xengineer-backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
