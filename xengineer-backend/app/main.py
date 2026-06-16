@@ -11,7 +11,24 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
+from app.pipeline.base import PipelineNode
 from app.pipeline.orchestrator import PipelineOrchestrator
+
+# 预生成的 0.5 秒静音 MP3（24kHz mono, 788 bytes）
+# 用于 TTS stub 节点发送真实可解码的 mp3 给前端
+_STUB_SILENCE_MP3_BASE64 = (
+    "SUQzBAAAAAAAIlRTU0UAAAAOAAADTGF2ZjYxLjcuMTAyAAAAAAAAAAAAAAD/84TAAAAAAAAAAAAASW5mbwAAAA8AAAAXAAAC6ABK"
+    "SkpKUlJSUlpaWlpaY2NjY2tra2tzc3Nzc3t7e3uEhISEjIyMjIyUlJSUnJycnKWlpaWlra2trbW1tbW9vb29vcbGxsbOzs7O1tbW1t"
+    "be3t7e5+fn5+/v7+/v9/f39/////8AAAAATGF2YzYxLjE5AAAAAAAAAAAAAAAAJAKgAAAAAAAAAuhmdbRPAAAAAAAAAAAAAA"
+    "AAAAAAAAAAAAAD/8xTEAAAAA0gAAAAATEFNRTMuMTAwVVX/8xTECwAAA0gAAAAAVVVVVVVVVVVVVVX/8xTEFgAAA0gAAAAAVV"
+    "VVVVVVVVVVVX/8xTEIQAAA0gAAAAAVVVVVVVVVVVVVVX/8xTELAAAA0gAAAAAVVVVVVVVVVVVVVX/8xTENwAAA0gAAAAAVV"
+    "VVVVVVVVVVVX/8xTEQgAAA0gAAAAAVVVVVVVVVVVVVVX/8xTETQAAA0gAAAAAVVVVVVVVVVVVVVX/8xTEWAAAA0gAAAAAVV"
+    "VVVVVVVVVVVX/8xTEYwAAA0gAAAAAVVVVVVVVVVVVVVX/8xTEbgAAA0gAAAAAVVVVVVVVVVVVVVX/8xTEeQAAA0gAAAAAVV"
+    "VVVVVVVVVVVX/8xTEhAAAA0gAAAAAVVVVVVVVVVVVVVX/8xTEjwAAA0gAAAAAVVVVVVVVVVVVVVX/8xTEmgAAA0gAAAAAVV"
+    "VVVVVVVVVVVX/8xTEpQAAA0gAAAAAVVVVVVVVVVVVVVX/8xTEsAAAA0gAAAAAVVVVVVVVVVVVVVX/8xTEuwAAA0gAAAAAVV"
+    "VVVVVVVVVVVX/8xTExgAAA0gAAAAAVVVVVVVVVVVVVVX/8xTE0QAAA0gAAAAAVVVVVVVVVVVVVVX/8xTE3AAAA0gAAAAAVV"
+    "VVVVVVVVVVVX/8xTE5wAAA0gAAAAAVVVVVVVVVVVVVVX/8xTE8gAAA0gAAAAAVVVVVVVVVVVVVVU="
+)
 
 logger = logging.getLogger("xengineer")
 
@@ -43,6 +60,72 @@ def _print_config_status():
     print("=" * 50)
 
 
+# ------------------------------------------------------------------
+# Stub Pipeline 节点（开发模式）
+# ------------------------------------------------------------------
+
+
+class StubASRNode(PipelineNode):
+    """Stub ASR 节点 — 发送 asr_final 给前端并触发下游链路
+
+    与真实 ASR 不同，stub ASR 不会在每帧音频时触发链路，
+    而是由 orchestrator._stop_asr_session() 调用 process({}) 时
+    才触发最终识别 → VLM → TTS 完整链路。
+    """
+
+    async def process(self, data: dict) -> dict:
+        # 音频帧时仅消费，不触发链路（模拟真实 ASR 行为）
+        if data.get("audio"):
+            return data
+
+        # 收到空 data（来自 _stop_asr_session），触发最终识别
+        text = "[ASR stub] 识别结果"
+        if self.orchestrator:
+            await self.orchestrator.send_to_frontend({
+                "type": "asr_final",
+                "text": text,
+            })
+        await self.send_to_next({"text": text})
+        return data
+
+
+class StubVLMNode(PipelineNode):
+    """Stub VLM+LLM 节点 — 发送 llm_chunk 给前端并传递给 TTS"""
+
+    async def process(self, data: dict) -> dict:
+        text = data.get("text", "")
+        if not text:
+            return data
+
+        response = "[VLM stub] AI 回复"
+        if self.orchestrator:
+            await self.orchestrator.send_to_frontend({
+                "type": "llm_chunk",
+                "text": response,
+            })
+        await self.send_to_next({"text": response})
+        return data
+
+
+class StubTTSNode(PipelineNode):
+    """Stub TTS 节点 — 发送真实静音 MP3 给前端验证播放链路"""
+
+    async def process(self, data: dict) -> dict:
+        text = data.get("text", "")
+        if not text:
+            return data
+
+        if self.orchestrator:
+            await self.orchestrator.send_to_frontend({
+                "type": "tts_audio",
+                "data": _STUB_SILENCE_MP3_BASE64,
+            })
+            await self.orchestrator.send_to_frontend({
+                "type": "tts_end",
+            })
+        return data
+
+
 def _build_pipeline():
     """根据 USE_REAL_NODES 构建真实或 Stub Pipeline"""
     if USE_REAL:
@@ -58,12 +141,10 @@ def _build_pipeline():
         logger.info("Pipeline built with REAL nodes (ASR → VLM+LLM → TTS)")
         return asr, vlm, tts
     else:
-        from app.pipeline.base import StubNode
-
-        asr = StubNode("asr_stub", {"text": "[ASR stub] 识别结果"})
-        vlm = StubNode("vlm_stub", {"response": "[VLM stub] AI 回复"})
-        tts = StubNode("tts_stub", {"audio": "[TTS stub] 音频数据"})
-        logger.info("Pipeline built with STUB nodes (development mode)")
+        asr = StubASRNode("ASR-Stub")
+        vlm = StubVLMNode("VLM-Stub")
+        tts = StubTTSNode("TTS-Stub")
+        logger.info("Pipeline built with STUB nodes (development mode, sends frontend messages)")
         return asr, vlm, tts
 
 
