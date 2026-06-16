@@ -241,7 +241,7 @@ for i in range(1, 6):
             b64 = base64.b64encode(f.read()).decode('utf-8')
             frames.append('data:image/jpeg;base64,' + b64)
 print('window.__mockVideoFrames = ' + json.dumps(frames) + ';')
-print('\"VIDEO_FRAMES_LOADED:\" + str(len(frames)) + \"\";')
+print(f'\"VIDEO_FRAMES_LOADED:{len(frames)}\";')
 " 2>/dev/null)
 
     LOAD_FRAMES_OUT=$(echo "$VIDEO_FRAMES_JS" | run_ab $EVAL_TIMEOUT eval --stdin 2>&1)
