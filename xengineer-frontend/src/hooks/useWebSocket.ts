@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import type { ClientMessage, ServerMessage, ConnectionStatus } from '../lib/protocol'
 
-const WS_URL = import.meta.env.VITE_WS_URL || `ws://${window.location.hostname}:8000/ws`
+const WS_URL = import.meta.env.VITE_WS_URL || `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.hostname}:8000/ws`
 
 export function useWebSocket() {
   const [status, setStatus] = useState<ConnectionStatus>('disconnected')
@@ -12,7 +12,16 @@ export function useWebSocket() {
 
   const connect = useCallback(() => {
     setStatus('connecting')
-    const ws = new WebSocket(WS_URL)
+    let ws: WebSocket
+    try {
+      ws = new WebSocket(WS_URL)
+    } catch (err) {
+      console.warn('[WS] Failed to construct WebSocket:', err)
+      setStatus('error')
+      // 3s 后重试
+      reconnectTimerRef.current = window.setTimeout(() => connectRef.current(), 3000)
+      return
+    }
 
     ws.onopen = () => {
       setStatus('connected')
