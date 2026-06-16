@@ -1,11 +1,13 @@
-# Nixpacks 配置 — 告诉 Nixpacks 这是一个 Python 项目，忽略根目录的 package.json
-# Railway 后端只需要 Python 环境，不需要 Node.js
+# Nixpacks / Railpack 配置
+# Railway 后端使用 Railpack 构建，此文件同时兼容 Nixpacks 和 Railpack
+# Root Directory 设置为 xengineer-backend/，但 Railpack 会分析整个仓库
+# 因此需要在根目录放置 requirements.txt 和 runtime.txt 以便 Railpack 识别 Python 项目
 
 [phases.setup]
-nixPkgs = ["...", "python311"]
+nixPkgs = ["...", "python312"]
 
 [phases.install]
-cmds = ["pip install -r xengineer-backend/requirements.txt"]
+cmds = ["pip install -r requirements.txt"]
 
 [phases.build]
 cmds = []
