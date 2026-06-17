@@ -79,7 +79,7 @@ agent-browser → 真实 Netlify 页面 → getUserMedia(被Hook)
 │  └────────────────────────────────────────────────────────┘ │
 │                         │                                    │
 │                         ▼                                    │
-│  ┌─ open: https://xengineer-dev.netlify.app ──────────────┐ │
+│  ┌─ open: https://optalk.netlify.app ───────────────────────┐ │
 │  │  React App 加载 → WebSocket 连接后端                    │ │
 │  └────────────────────────────────────────────────────────┘ │
 │                         │                                    │

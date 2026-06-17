@@ -226,7 +226,7 @@ python3 tests/prepare_test_audio.py
 - 流程编排：
   ```bash
   # 1. 打开 Netlify 页面
-  agent-browser open https://xengineer-dev.netlify.app
+  agent-browser open https://optalk.netlify.app
   agent-browser wait --load networkidle
   agent-browser screenshot download/browser-e2e/01-page-loaded.png
 

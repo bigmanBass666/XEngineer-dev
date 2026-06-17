@@ -193,7 +193,7 @@ z-ai asr -f test_voice_16k.wav -o asr_result.json
 
 **测试流程**：
 ```
-agent-browser open https://xengineer-frontend.netlify.app
+agent-browser open https://optalk.netlify.app
   → screenshot（保存到 /home/z/my-project/download/）
   → snapshot -i（检查页面交互元素）
   → console（检查 WS 连接日志）
@@ -245,7 +245,7 @@ RESULTS+=("Health: OK")
 
 echo ""
 echo "=== 2. 前端页面可访问 ==="
-STATUS=$(curl -sf -o /dev/null -w "%{http_code}" https://xengineer-frontend.netlify.app)
+STATUS=$(curl -sf -o /dev/null -w "%{http_code}" https://optalk.netlify.app)
 echo "HTTP $STATUS"
 RESULTS+=("Frontend: HTTP $STATUS")
 
