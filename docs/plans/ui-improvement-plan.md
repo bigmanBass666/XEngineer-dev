@@ -484,9 +484,119 @@ theme: {
 
 ---
 
-## 9. 子代理执行编排预案
+## 9. Mockup 评审阶段（用户决策前置环节）
 
-用户确认计划后，主代理将按以下顺序派子代理（每个 PR 一个子代理，串行执行避免冲突）：
+> 本阶段是 §10 子代理执行编排的**前置环节**。在用户从 6 个候选方向中选定 signature 之前，不进入 PR #1-#4 代码实施。
+
+### 9.1 目的
+
+文字描述 + 配色 hex 码 + 字体名都无法让用户真实感受"这个方向做出来什么样"。在进入 PR #1-#4 React 代码实施前，先用静态 HTML+CSS mockup 让用户视觉对比 6 个 signature 方向，选定后再开始改 React 代码。避免实施到一半发现方向不对要返工。
+
+### 9.2 6 个 Mockup 方案清单
+
+> 6 个方向的详细论证见对话讨论，本表是速查。所有方案都主动避开 SKILL.md 警示的 3 个 AI 模板默认（cream+serif+terracotta / black+acid-green / broadsheet hairline）。
+
+| ID | 方案 | 核心隐喻 | 主色 | 字体组合 | 风险等级 | 与 Engineer 关联 | 与 AI 视觉对话契合 |
+|---|---|---|---|---|---|---|---|
+| **A** | 示波器 / Oscilloscope | AI 视觉对话 = 科学仪器测量信号 | 工程灰 `#0a0a0b→#34343c` + 朱砂红 `#C8453C` + 示波器青 `#5eead4` | 思源宋 + 思源黑 + JetBrains Mono | 中 | 强 | 中 |
+| **B** | 暗房 / Darkroom | AI 在暗房红安全灯下显影画面 | 安全灯红 `#7a1f1f` + 显影黑 `#0d0a0a` + 相纸米白 `#f4ead5` | Cormorant + Inter + IBM Plex Mono | 中 | 弱 | 强 |
+| **C** | 水墨 / Ink Modernism | 东方书法的留白+笔触+印章 | 墨黑 `#1a1d1f` + 宣纸米 `#f5f1e8` + 印章朱砂 `#c8453c` + 金箔 `#c9a961` | 霞鹜文楷 + 思源黑 + JetBrains Mono | 中 | 中（"X"印章感） | 中 |
+| **D** | 广播室 / Broadcast Studio | 双模态对话 = 调音台前与电台主播对话 | 深胡桃木 `#2a1810` + 黄铜 `#b08d57` + 暖象牙 `#f5e6d3` + VU 绿 `#4ade80` | Playfair Display + Source Sans + JetBrains Mono | 中高 | 弱 | 强 |
+| **E** | 实验室 / Laboratory | AI 是实验员，分析视觉+语音样本 | 医用白 `#fafbfc` + 解剖绿 `#2d5f4e` + 警示橙 `#d97706` + 数据蓝 `#0ea5e9` | Söhne/Inter + 同 + JetBrains Mono | 中 | 强 | 中 |
+| **F** | 终端 / Terminal CRT | 工程师图腾 — 磷光绿 CRT 终端 | 磷光绿 `#00ff41` + 深黑 `#0a0e0a` + 琥珀警告 `#ffb000` | 全文 JetBrains Mono（display+body+data） | 高 | 极强 | 弱 |
+
+### 9.3 Mockup 技术规范
+
+**形式**:
+- 纯 HTML + 内联 CSS 单文件（`<scheme>.html`），无 React / 无 build / 无外部 JS 依赖
+- 字体通过 Google Fonts `<link>` 加载
+- 不连真实后端、不调 getUserMedia、不响应点击 — 纯静态展示
+- 允许使用 CSS animation / keyframes 模拟动效（如呼吸光、扫描线、波形脉动）
+
+**布局复刻**（所有 6 个 mockup 必须复刻同一布局，仅样式不同）:
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│ [logo] XEngineer                              [data readouts]  │  Header (h-14)
+│        AI Vision Conversation Assistant                        │
+├──────────────────────┬─────────────────────────────────────────┤
+│                      │                                         │
+│   [Camera 4:3]       │  USER: 你好，你能看到我吗？              │
+│   取景框 + 角标       │                                         │
+│                      │  AI: 是的，我能看到你。你戴着一副...     │
+│                      │  (流式中，含光标)                        │
+│   [● REC] [测试消息]  │                                         │
+│                      │  SYS: 摄像头已开启                       │
+│                      │                                         │
+│                      │  USER: 好的，那你能听到我说话吗？        │
+├──────────────────────┴─────────────────────────────────────────┤
+│ WS:CONNECTED │ VAD:SILENT │ AI:IDLE │ 24kHz │ v0.1.0           │  StatusBar
+└────────────────────────────────────────────────────────────────┘
+```
+
+**signature 元素要求**（每个方案必须实现各自 §2 中列出的全部 signature 元素的静态展示）:
+- A 示波器：取景器十字线 + 32 柱波形（CSS animation 模拟）+ 数据读数条
+- B 暗房：左上角红色 ambient 光晕（径向渐变）+ Camera 边框胶片穿孔（左右 8 个小方块）+ 流式回复用模糊渐显动效
+- C 水墨：印章式 logo（朱砂红方形 + 白文"X"）+ 对话气泡底部"落款"+ Camera 角部墨笔触装饰
+- D 广播室：录音按钮设计成物理推子样式 + VU 表针（CSS 旋转动画）+ Camera 边框设计成老式电视框
+- E 实验室：light theme + Camera 边框显微镜圆形视野（径向 mask）+ 状态栏表格化（行间分隔 + 序号列）
+- F 终端：CRT 扫描线 overlay + 全文 JetBrains Mono + 实心方块光标 + AI 回复每行前 `>` 提示符
+
+**截图要求**:
+- 桌面端 1440×900 PNG（必出）
+- 移动端 375×812 PNG（必出，验证响应式）
+
+### 9.4 子代理编排
+
+6 个子代理并行执行（互不依赖），每个负责一个方案：
+
+| 子代理 | 方案 | 输出目录 |
+|---|---|---|
+| subagent-M1 | A 示波器 | `docs/ui-mockups/A-oscilloscope/` |
+| subagent-M2 | B 暗房 | `docs/ui-mockups/B-darkroom/` |
+| subagent-M3 | C 水墨 | `docs/ui-mockups/C-ink/` |
+| subagent-M4 | D 广播室 | `docs/ui-mockups/D-broadcast/` |
+| subagent-M5 | E 实验室 | `docs/ui-mockups/E-lab/` |
+| subagent-M6 | F 终端 | `docs/ui-mockups/F-terminal/` |
+
+每个子代理的输出文件清单:
+- `<scheme>.html` (单文件 mockup, 30-80KB)
+- `desktop-1440x900.png` (桌面端截图)
+- `mobile-375x812.png` (移动端截图)
+
+**关键约束**:
+- 子代理**只创建文件**，不 commit / 不 push（避免 6 个并行 push 冲突）
+- 主代理等 6 个子代理全部完成后，统一 `git add docs/ui-mockups/ && git commit && git push`
+- 子代理可 Read `/home/z/my-project/skills/frontend-design/SKILL.md` 做设计原则参考
+- 子代理可 Read `/home/z/my-project/XEngineer/docs/ui-research/frontend-structure.md` 了解当前 UI 结构
+
+### 9.5 评审流程
+
+1. 主代理 push 6 个 mockup 到 PR #54（feat/improve-ui 分支）
+2. 主代理在 PR #54 评论里贴 6 张桌面端截图（GitHub 渲染图片，用户直接看）
+3. 用户在 PR 评论里挑选（或在这里告诉主代理）
+4. 用户选定后:
+   - 主代理更新计划文档 §2，把 signature 概念从"示波器"改为用户选定的方案
+   - 主代理更新 §3 design tokens，匹配选定方案
+   - 主代理更新 §4 组件级改造清单（如需要）
+   - 主代理 commit + push 计划文档更新
+5. 进入 §10 子代理执行编排预案，派 subagent-E 开始 PR #1
+
+### 9.6 不入选的 mockup 处理
+
+用户选定后，其他 5 个 mockup 文件**保留在 `docs/ui-mockups/` 中**作为决策档案，不删除。这样后续如果需要切换方向或回看，都有视觉参考。
+
+### 9.7 时间预估
+
+- 6 个子代理并行做 mockup: 约 10-15 分钟（每个子代理独立工作）
+- 主代理 push + 用户审阅: 约 5-10 分钟
+- 总耗时: 约 15-25 分钟
+
+---
+
+## 10. 子代理执行编排预案
+
+用户在 §9 Mockup 评审中选定方向后，主代理将按以下顺序派子代理（每个 PR 一个子代理，串行执行避免冲突）：
 
 | 子代理 | 任务 | 输入 | 输出 |
 |---|---|---|---|
