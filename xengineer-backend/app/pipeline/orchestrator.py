@@ -39,6 +39,7 @@ class PipelineOrchestrator:
 
         # VAD 驱动的状态
         self._session_active: bool = False
+        self._stub_fallback: bool = False  # start_session 超时后降级到 stub
         self._latest_image: Optional[str] = None  # base64 JPEG
 
     # ------------------------------------------------------------------
@@ -148,18 +149,26 @@ class PipelineOrchestrator:
             return
 
         self._session_active = True
+        self._stub_fallback = False
 
         # 如果 ASR 节点有 start_session 方法（真实节点），调用它
         if hasattr(self.asr_node, "start_session"):
             try:
-                await self.asr_node.start_session()
+                # 超时保护：ASR 连接火山引擎最多等 5 秒，超时自动降级到 stub 链路
+                await asyncio.wait_for(
+                    self.asr_node.start_session(), timeout=5.0
+                )
                 logger.info("ASR session started (real node)")
+            except asyncio.TimeoutError:
+                logger.error("ASR start_session timed out (5s) — 降级到 stub 链路")
+                self._stub_fallback = True
             except Exception as e:
                 logger.error(f"ASR start_session failed: {e}", exc_info=True)
-                self._session_active = False
+                self._stub_fallback = True
+                # 保持 _session_active=True，让 vad_status(false) 能触发 _stop_asr_session 走 stub 链路
                 await self.send_to_frontend({
                     "type": "error",
-                    "message": f"语音识别启动失败: {e}",
+                    "message": f"语音识别启动失败，降级到 stub 模式: {e}",
                 })
         else:
             logger.info("ASR session started (stub node)")
@@ -173,20 +182,38 @@ class PipelineOrchestrator:
         """结束 ASR 会话，触发最终识别结果 → VLM → TTS"""
         self._session_active = False
 
-        if hasattr(self.asr_node, "stop_session"):
+        if self._stub_fallback:
+            # start_session 超时或失败，走 stub 链路
+            logger.info("ASR session stopped (stub fallback)")
+            if self.asr_node:
+                try:
+                    await self.asr_node.process({})
+                except Exception as e:
+                    logger.error(f"Stub pipeline chain error: {e}", exc_info=True)
+        elif hasattr(self.asr_node, "stop_session"):
             try:
-                await self.asr_node.stop_session()
+                # 超时保护：stop_session 最多等 10 秒（含 receive_loop 等待）
+                await asyncio.wait_for(
+                    self.asr_node.stop_session(), timeout=10.0
+                )
                 logger.info("ASR session stopped (real node)")
+            except asyncio.TimeoutError:
+                logger.error("ASR stop_session timed out (10s) — 尝试 stub 降级")
+                if self.asr_node:
+                    try:
+                        await self.asr_node.process({})
+                    except Exception as e:
+                        logger.error(f"Stub fallback after timeout: {e}", exc_info=True)
             except Exception as e:
                 logger.error(f"ASR stop_session failed: {e}", exc_info=True)
-                await self.send_to_frontend({
-                    "type": "error",
-                    "message": f"语音识别结束异常: {e}",
-                })
+                # stop_session 失败也尝试 stub 降级
+                if self.asr_node:
+                    try:
+                        await self.asr_node.process({})
+                    except Exception as e2:
+                        logger.error(f"Stub fallback after error: {e2}", exc_info=True)
         else:
             logger.info("ASR session stopped (stub node)")
-            # Stub 节点没有 stop_session()，手动触发完整 pipeline 链路
-            # ASR stub 的 process({}) 会发送 asr_final 并触发 VLM → TTS
             if self.asr_node:
                 try:
                     await self.asr_node.process({})
