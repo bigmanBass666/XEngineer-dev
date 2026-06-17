@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XEngineer — Mockup M9 · Split Layout × Oscilloscope</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* =====================================================================
+   XEngineer · Mockup M9 — 布局② 大视频+右侧聊天栏 × 示波器 Signature
+   单文件静态 mockup · 仅供视觉评审 · 不连真实后端 · 不调 getUserMedia
+   ===================================================================== */
+
+:root {
+  /* === Surface (工程灰梯度) === */
+  --surface-0: #0a0a0b;
+  --surface-1: #131316;
+  --surface-2: #1c1c20;
+  --surface-3: #26262c;
+  --surface-4: #34343c;
+
+  /* === Text === */
+  --text-primary: #f5f5f7;
+  --text-secondary: #a1a1a8;
+  --text-tertiary: #6b6b73;
+  --text-inverse: #0a0a0b;
+
+  /* === Brand (朱砂红 — signature) === */
+  --brand-500: #c8453c;
+  --brand-400: #d65a52;
+  --brand-600: #a83a32;
+  --brand-glow: rgba(200, 69, 60, 0.35);
+
+  /* === Functional === */
+  --accent-success: #4ade80;
+  --accent-warning: #fbbf24;
+  --accent-danger: #ef4444;
+
+  /* === Technical (示波器风格) === */
+  --grid-line: rgba(255, 255, 255, 0.04);
+  --grid-line-strong: rgba(255, 255, 255, 0.08);
+  --scope-cyan: #5eead4;
+  --scope-amber: #fbbf24;
+
+  /* === 字体 === */
+  --font-display: 'Noto Serif SC', 'Source Han Serif SC', 'STSong', serif;
+  --font-body: 'Noto Sans SC', 'Source Han Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+
+  /* === Spacing === */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* === Radius === */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
+  --radius-pill: 9999px;
+
+  /* === Borders === */
+  --border-hairline: 1px solid var(--surface-3);
+  --border-brand: 1px solid var(--brand-500);
+
+  /* === Motion === */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 150ms;
+  --dur-base: 250ms;
+}
+
+/* ============ Reset ============ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  height: 100%;
+  background: var(--surface-0);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+}
+button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+svg { display: block; }
+
+/* ============ Signature #5 (旧): 背景网格 ============ */
+.bg-grid {
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 32px 32px;
+  pointer-events: none;
+  z-index: 0;
+}
+.bg-grid::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(200, 69, 60, 0.04), transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(94, 234, 212, 0.03), transparent 50%);
+}
+
+/* ============ App Grid — 布局② 70:30 ============ */
+.app {
+  position: relative;
+  display: grid;
+  grid-template-columns: 70fr 30fr;
+  height: 100vh;
+  background: var(--surface-0);
+  z-index: 1;
+}
+
+/* ============ Video Pane ============ */
+.video-pane {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-0);
+  border-right: var(--border-hairline);
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* ============ Top Status Bar ============ */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 var(--space-6);
+  background: rgba(10, 10, 11, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: var(--border-hairline);
+  flex-shrink: 0;
+  z-index: 10;
+}
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  min-width: 0;
+}
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+/* === 通话计时器 — 新 signature #2 === */
+.timer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-primary);
+  letter-spacing: 0.05em;
+}
+.timer-dot {
+  width: 9px;
+  height: 9px;
+  background: var(--brand-500);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--brand-glow), 0 0 16px rgba(200, 69, 60, 0.2);
+  animation: pulse-dot 1.2s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.82); }
+}
+
+/* === 连接质量 === */
+.conn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+  letter-spacing: 0.08em;
+}
+.conn-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 14px;
+}
+.conn-bars span {
+  width: 3px;
+  background: var(--accent-success);
+  border-radius: 1px;
+  box-shadow: 0 0 4px rgba(74, 222, 128, 0.4);
+}
+.conn-bars span:nth-child(1) { height: 4px; }
+.conn-bars span:nth-child(2) { height: 7px; }
+.conn-bars span:nth-child(3) { height: 10px; }
+.conn-bars span:nth-child(4) { height: 14px; opacity: 0.35; }
+
+/* === AI 状态四态指示 — 新 signature #3 === */
+.ai-state {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: var(--surface-2);
+  border: var(--border-hairline);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+.ai-state .state {
+  color: var(--text-tertiary);
+  opacity: 0.4;
+  font-weight: 500;
+  animation: state-cycle 12s var(--ease-out-expo) infinite;
+}
+.ai-state .state:nth-child(1) { animation-delay: -7s; }   /* IDLE      → visible 5-8s  */
+.ai-state .state:nth-child(3) { animation-delay: -4s; }   /* LISTENING → visible 8-11s */
+.ai-state .state:nth-child(5) { animation-delay: -1s; }   /* THINKING  → visible 11-14s */
+.ai-state .state:nth-child(7) { animation-delay: -10s; }  /* SPEAKING  → visible 2-5s   */
+.ai-state .sep {
+  color: var(--surface-4);
+  font-weight: 400;
+}
+@keyframes state-cycle {
+  0%, 24% {
+    color: var(--brand-400);
+    text-shadow: 0 0 8px var(--brand-glow);
+    opacity: 1;
+  }
+  25%, 100% {
+    color: var(--text-tertiary);
+    text-shadow: none;
+    opacity: 0.4;
+  }
+}
+
+/* === 数据读数条 — 旧 signature #2 === */
+.readouts {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+.readout {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.readout .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+.readout .dot.ok {
+  background: var(--accent-success);
+  box-shadow: 0 0 4px rgba(74, 222, 128, 0.5);
+}
+.readout .dot.brand {
+  background: var(--brand-500);
+  box-shadow: 0 0 4px var(--brand-glow);
+  animation: pulse-dot 1.2s ease-in-out infinite;
+}
+.readout .dot.cyan {
+  background: var(--scope-cyan);
+  box-shadow: 0 0 4px rgba(94, 234, 212, 0.5);
+}
+.readout .key { color: var(--text-tertiary); }
+.readout .val { color: var(--text-secondary); }
+.readout .val.ok    { color: var(--accent-success); }
+.readout .val.brand { color: var(--brand-400); }
+.readout .val.cyan  { color: var(--scope-cyan); }
+
+/* === [💬] 对话历史按钮 === */
+.chat-btn {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  border: var(--border-hairline);
+  background: var(--surface-2);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--dur-base);
+}
+.chat-btn:hover {
+  background: var(--surface-3);
+  color: var(--text-primary);
+  border-color: var(--brand-500);
+}
+.chat-btn .badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 10px;
+  height: 10px;
+  background: var(--brand-500);
+  border: 2px solid var(--surface-0);
+  border-radius: 50%;
+  box-shadow: 0 0 6px var(--brand-glow);
+}
+
+/* ============ Video Stage ============ */
+.video-stage {
+  position: relative;
+  flex: 1;
+  background: radial-gradient(ellipse at center, #1c1c20 0%, #0a0a0b 80%);
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* 模拟镜头画面 */
+.video-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 220px 320px at 50% 58%, rgba(200, 170, 160, 0.10), transparent 70%),
+    radial-gradient(ellipse 120px 80px at 50% 28%, rgba(220, 200, 190, 0.08), transparent 70%),
+    linear-gradient(180deg, rgba(28, 28, 32, 0.5) 0%, rgba(10, 10, 11, 0.9) 100%);
+}
+/* 模拟人像剪影 */
+.silhouette {
+  position: absolute;
+  left: 50%;
+  top: 58%;
+  transform: translate(-50%, -50%);
+  width: 220px;
+  height: 320px;
+  background:
+    radial-gradient(circle 48px at 50% 18%, rgba(210, 180, 170, 0.22), transparent 72%),
+    radial-gradient(ellipse 110px 130px at 50% 72%, rgba(70, 75, 90, 0.45), transparent 72%);
+  filter: blur(1.5px);
+}
+/* 背景墙装饰 */
+.wall-art {
+  position: absolute;
+  top: 18%;
+  right: 18%;
+  width: 80px;
+  height: 100px;
+  border: 1px solid rgba(94, 234, 212, 0.12);
+  background: linear-gradient(135deg, rgba(94, 234, 212, 0.04), rgba(200, 69, 60, 0.04));
+  border-radius: var(--radius-sm);
+}
+.wall-art::after {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  background: linear-gradient(180deg, rgba(94, 234, 212, 0.08), transparent 60%);
+}
+
+/* === 新 signature #1: VAD 画面边缘光晕 === */
+.vad-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 40px var(--brand-glow),
+    inset 0 0 100px rgba(200, 69, 60, 0.18),
+    inset 0 0 200px rgba(200, 69, 60, 0.08);
+  border: 1px solid rgba(200, 69, 60, 0.35);
+  animation: vad-pulse 1.4s ease-in-out infinite;
+  z-index: 3;
+}
+@keyframes vad-pulse {
+  0%, 100% { opacity: 0.75; }
+  50%      { opacity: 1; }
+}
+
+/* === 旧 signature #1: 取景器四角 L 形 === */
+.corner {
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  border-color: var(--brand-500);
+  border-style: solid;
+  opacity: 0.95;
+  z-index: 4;
+}
+.corner.tl { top: 24px; left: 24px; border-width: 2px 0 0 2px; }
+.corner.tr { top: 24px; right: 24px; border-width: 2px 2px 0 0; }
+.corner.bl { bottom: 24px; left: 24px; border-width: 0 0 2px 2px; }
+.corner.br { bottom: 24px; right: 24px; border-width: 0 2px 2px 0; }
+
+/* === 旧 signature #1: 中心十字 hairline === */
+.crosshair {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 28px;
+  height: 28px;
+  pointer-events: none;
+  z-index: 4;
+}
+.crosshair::before,
+.crosshair::after {
+  content: '';
+  position: absolute;
+  background: var(--scope-cyan);
+  opacity: 0.75;
+  box-shadow: 0 0 4px rgba(94, 234, 212, 0.5);
+}
+.crosshair::before {
+  left: 50%; top: 0; width: 1px; height: 100%; transform: translateX(-50%);
+}
+.crosshair::after {
+  top: 50%; left: 0; height: 1px; width: 100%; transform: translateY(-50%);
+}
+.crosshair-dot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 4px;
+  height: 4px;
+  background: var(--brand-500);
+  border-radius: 50%;
+  box-shadow: 0 0 6px var(--brand-glow);
+  z-index: 5;
+}
+
+/* === 扫描线（呼吸示波器感） === */
+.scanline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 120px;
+  background: linear-gradient(180deg,
+    transparent 0%,
+    rgba(94, 234, 212, 0.04) 40%,
+    rgba(94, 234, 212, 0.08) 50%,
+    rgba(94, 234, 212, 0.04) 60%,
+    transparent 100%);
+  pointer-events: none;
+  animation: scan 7s linear infinite;
+  z-index: 2;
+}
+@keyframes scan {
+  0%   { top: -120px; }
+  100% { top: 100%; }
+}
+
+/* === 角部刻度标记 === */
+.camera-ticks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  z-index: 5;
+}
+.camera-ticks .tl { position: absolute; top: 44px; left: 44px; }
+.camera-ticks .br { position: absolute; bottom: 44px; right: 44px; }
+.camera-ticks .label {
+  display: inline-block;
+  padding: 2px 6px;
+  background: rgba(10, 10, 11, 0.6);
+  border: 1px solid var(--surface-3);
+  border-radius: var(--radius-sm);
+  backdrop-filter: blur(4px);
+}
+
+/* === 顶部右侧角标：CH·01 === */
+.channel-tag {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 4px 12px;
+  background: rgba(10, 10, 11, 0.7);
+  border: 1px solid var(--surface-3);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+  z-index: 5;
+  backdrop-filter: blur(8px);
+}
+.channel-tag .rec-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--brand-500);
+  border-radius: 50%;
+  box-shadow: 0 0 6px var(--brand-glow);
+  animation: pulse-dot 1.2s ease-in-out infinite;
+}
+
+/* === 新 signature #4: 浮动控制条胶囊 === */
+.controls {
+  position: absolute;
+  left: 50%;
+  bottom: 32px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 10px 14px;
+  background: rgba(19, 19, 22, 0.65);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--brand-500);
+  border-radius: var(--radius-pill);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.6),
+    0 0 24px rgba(200, 69, 60, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  z-index: 6;
+}
+.ctrl-btn {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--surface-3);
+  background: rgba(38, 38, 44, 0.65);
+  border-radius: 50%;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--dur-base) var(--ease-out-expo);
+}
+.ctrl-btn:hover {
+  background: var(--surface-3);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+.ctrl-btn.active {
+  background: rgba(200, 69, 60, 0.15);
+  border-color: var(--brand-500);
+  color: var(--brand-400);
+}
+.ctrl-btn.hangup {
+  background: var(--accent-danger);
+  border-color: var(--accent-danger);
+  color: #fff;
+  margin-left: 6px;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+}
+.ctrl-btn.hangup:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+}
+.ctrl-btn svg { width: 20px; height: 20px; }
+
+/* ============ Chat Pane ============ */
+.chat-pane {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-1);
+  min-width: 0;
+  overflow: hidden;
+}
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 var(--space-6);
+  background: var(--surface-1);
+  border-bottom: var(--border-hairline);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+.chat-header .title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.chat-header .title .ind {
+  width: 6px;
+  height: 6px;
+  background: var(--accent-success);
+  border-radius: 50%;
+  box-shadow: 0 0 4px rgba(74, 222, 128, 0.5);
+}
+.chat-header .meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-tertiary);
+}
+.chat-header .meta b {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.chat-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-4) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-4) transparent;
+}
+.chat-body::-webkit-scrollbar { width: 6px; }
+.chat-body::-webkit-scrollbar-track { background: transparent; }
+.chat-body::-webkit-scrollbar-thumb {
+  background: var(--surface-3);
+  border-radius: 3px;
+}
+
+/* === 消息块 === */
+.msg {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 88%;
+}
+.msg.user {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+.msg.ai,
+.msg.sys {
+  align-self: flex-start;
+  align-items: flex-start;
+}
+.msg-tag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--text-tertiary);
+}
+.msg.user .msg-tag .role { color: var(--brand-400); }
+.msg.ai .msg-tag .role   { color: var(--scope-cyan); }
+.msg.sys .msg-tag .role  { color: var(--text-secondary); }
+.msg-tag .time { color: var(--text-tertiary); }
+.msg-tag .stream-pill {
+  padding: 1px 6px;
+  background: rgba(94, 234, 212, 0.1);
+  border: 1px solid rgba(94, 234, 212, 0.3);
+  border-radius: var(--radius-pill);
+  color: var(--scope-cyan);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+}
+.bubble {
+  padding: 10px 14px;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  word-break: break-word;
+}
+.msg.user .bubble {
+  background: var(--brand-500);
+  color: #fff;
+  border-bottom-right-radius: var(--radius-sm);
+  box-shadow: 0 4px 16px rgba(200, 69, 60, 0.25);
+}
+.msg.ai .bubble {
+  background: var(--surface-2);
+  border: var(--border-hairline);
+  border-bottom-left-radius: var(--radius-sm);
+}
+.msg.sys .bubble {
+  background: rgba(28, 28, 32, 0.6);
+  border: var(--border-hairline);
+  border-left: 2px solid var(--brand-500);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-align: center;
+  align-self: center;
+  max-width: 100%;
+  border-radius: var(--radius-md);
+}
+
+/* === 新 signature #5: 用户语音识别字幕 === */
+.asr-subtitle {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  background: rgba(94, 234, 212, 0.06);
+  border: 1px solid rgba(94, 234, 212, 0.25);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--scope-cyan);
+  letter-spacing: 0.03em;
+  max-width: 88%;
+}
+.asr-subtitle .dot {
+  width: 6px;
+  height: 6px;
+  background: var(--scope-cyan);
+  border-radius: 50%;
+  box-shadow: 0 0 6px rgba(94, 234, 212, 0.6);
+  animation: pulse-dot 1.2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+.asr-subtitle .label {
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  color: var(--scope-cyan);
+  flex-shrink: 0;
+}
+.asr-subtitle .text {
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 12px;
+}
+
+/* === 旧 signature #3: 流式回复光标 === */
+.cursor {
+  display: inline-block;
+  width: 8px;
+  height: 14px;
+  background: var(--brand-500);
+  vertical-align: text-bottom;
+  margin-left: 3px;
+  margin-bottom: 2px;
+  box-shadow: 0 0 6px var(--brand-glow);
+  animation: cursor-breath 800ms ease-in-out infinite;
+}
+@keyframes cursor-breath {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.35; }
+}
+
+/* === 新消息高亮（智能显隐：新 AI 消息自动滚动 + 高亮 3 秒） === */
+.msg.highlight .bubble {
+  animation: msg-highlight 3s var(--ease-out-expo);
+}
+@keyframes msg-highlight {
+  0%   { box-shadow: 0 0 0 0 var(--brand-glow); }
+  20%  { box-shadow: 0 0 0 4px rgba(200, 69, 60, 0.3), 0 0 24px var(--brand-glow); }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+/* === 聊天底部输入提示条（仅视觉占位，无真实输入） === */
+.chat-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-top: var(--border-hairline);
+  background: var(--surface-1);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.06em;
+  flex-shrink: 0;
+}
+.chat-footer .hint-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--scope-cyan);
+  border-radius: 50%;
+  box-shadow: 0 0 4px rgba(94, 234, 212, 0.5);
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
+
+/* ============ Mobile: 新消息提示条 ============ */
+.mobile-newmsg {
+  display: none;
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 100px;
+  padding: 12px 18px;
+  background: rgba(19, 19, 22, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--brand-500);
+  border-radius: var(--radius-pill);
+  color: var(--text-primary);
+  font-size: 13px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.6),
+    0 0 20px var(--brand-glow);
+  z-index: 7;
+  animation: newmsg-glow 2s ease-in-out infinite;
+}
+.mobile-newmsg .dot {
+  width: 8px;
+  height: 8px;
+  background: var(--brand-500);
+  border-radius: 50%;
+  box-shadow: 0 0 6px var(--brand-glow);
+  animation: pulse-dot 1.2s ease-in-out infinite;
+}
+.mobile-newmsg .arrow {
+  color: var(--text-tertiary);
+  font-size: 14px;
+  animation: arrow-bounce 1.5s ease-in-out infinite;
+}
+@keyframes newmsg-glow {
+  0%, 100% { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 16px var(--brand-glow); }
+  50%      { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 28px var(--brand-glow); }
+}
+@keyframes arrow-bounce {
+  0%, 100% { transform: translateY(0); opacity: 0.6; }
+  50%      { transform: translateY(-3px); opacity: 1; }
+}
+
+/* ============ 响应式 ============ */
+/* === 平板 sm-md (640-1023): 60:40 === */
+@media (max-width: 1023px) and (min-width: 640px) {
+  .app { grid-template-columns: 60fr 40fr; }
+  .topbar { padding: 0 var(--space-4); height: 52px; }
+  .topbar-left { gap: var(--space-4); }
+  .timer { font-size: 14px; }
+  .ai-state { padding: 5px 10px; font-size: 10px; }
+  .readouts { gap: 10px; font-size: 9px; }
+  .chat-header { padding: 0 var(--space-4); height: 52px; font-size: 10px; }
+  .chat-body { padding: var(--space-3); }
+  .bubble { font-size: 13px; padding: 9px 12px; }
+  .corner { width: 28px; height: 28px; }
+  .corner.tl, .corner.tr { top: 18px; }
+  .corner.bl, .corner.br { bottom: 18px; }
+  .corner.tl, .corner.bl { left: 18px; }
+  .corner.tr, .corner.br { right: 18px; }
+  .controls { bottom: 24px; padding: 8px 12px; gap: 6px; }
+  .ctrl-btn { width: 44px; height: 44px; }
+  .camera-ticks .tl { top: 32px; left: 32px; }
+  .camera-ticks .br { bottom: 32px; right: 32px; }
+}
+
+/* === 移动端 xs (<640): 100:0, 聊天栏变底部抽屉 === */
+@media (max-width: 639px) {
+  .app {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+  }
+  .chat-pane { display: none; } /* 聊天栏隐藏，变底部抽屉 */
+  .video-pane { border-right: none; }
+  .mobile-newmsg { display: flex; }
+
+  .topbar { padding: 0 var(--space-3); height: 50px; }
+  .topbar-left { gap: var(--space-3); }
+  .topbar-right { gap: var(--space-2); }
+  .timer { font-size: 13px; }
+  .timer-dot { width: 8px; height: 8px; }
+  .conn { display: none; } /* 移动端隐藏连接质量 */
+  .ai-state { padding: 5px 10px; font-size: 10px; gap: 4px; }
+  .ai-state .sep { display: none; } /* 紧凑显示 */
+  .ai-state .state { font-size: 10px; }
+  .readouts { display: none; } /* 移动端隐藏详细读数 */
+  .chat-btn { width: 34px; height: 34px; }
+
+  .corner { width: 26px; height: 26px; }
+  .corner.tl, .corner.tr { top: 16px; }
+  .corner.bl, .corner.br { bottom: 16px; }
+  .corner.tl, .corner.bl { left: 16px; }
+  .corner.tr, .corner.br { right: 16px; }
+  .crosshair { width: 24px; height: 24px; }
+  .camera-ticks { font-size: 9px; }
+  .camera-ticks .tl { top: 30px; left: 30px; }
+  .camera-ticks .br { bottom: 30px; right: 30px; }
+  .channel-tag { font-size: 9px; padding: 3px 10px; top: 16px; }
+
+  .controls {
+    bottom: 20px;
+    padding: 8px 10px;
+    gap: 5px;
+  }
+  .ctrl-btn { width: 44px; height: 44px; } /* 移动端最小 44×44 */
+  .ctrl-btn.hangup { margin-left: 4px; }
+  .ctrl-btn svg { width: 18px; height: 18px; }
+}
+
+/* === 超小屏 (<375) 适配 === */
+@media (max-width: 374px) {
+  .ai-state .state:nth-child(1),
+  .ai-state .state:nth-child(3),
+  .ai-state .state:nth-child(5) { display: none; } /* 只显示当前态 */
+  .ai-state .sep { display: none; }
+}
+</style>
+</head>
+<body>
+<!-- 旧 signature #5: 背景网格 -->
+<div class="bg-grid"></div>
+
+<div class="app">
+  <!-- ============ 视频面板 ============ -->
+  <div class="video-pane">
+
+    <!-- 顶部状态栏 -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <!-- 新 signature #2: 通话计时器 -->
+        <div class="timer">
+          <span class="timer-dot"></span>
+          <span>00:42</span>
+        </div>
+        <!-- 连接质量 -->
+        <div class="conn">
+          <div class="conn-bars">
+            <span></span><span></span><span></span><span></span>
+          </div>
+          <span>连接良好</span>
+        </div>
+        <!-- 新 signature #3: AI 状态四态指示 -->
+        <div class="ai-state">
+          <span class="state">IDLE</span>
+          <span class="sep">·</span>
+          <span class="state">LISTENING</span>
+          <span class="sep">·</span>
+          <span class="state">THINKING</span>
+          <span class="sep">·</span>
+          <span class="state">SPEAKING</span>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <!-- 旧 signature #2: 数据读数条 -->
+        <div class="readouts">
+          <div class="readout">
+            <span class="dot ok"></span>
+            <span class="key">WS</span>
+            <span class="val ok">CONNECTED</span>
+          </div>
+          <div class="readout">
+            <span class="dot brand"></span>
+            <span class="key">VAD</span>
+            <span class="val brand">SPEAKING</span>
+          </div>
+          <div class="readout">
+            <span class="dot cyan"></span>
+            <span class="key">SR</span>
+            <span class="val cyan">24kHz</span>
+          </div>
+          <div class="readout">
+            <span class="key">FW</span>
+            <span class="val">v0.1.0</span>
+          </div>
+        </div>
+        <!-- [💬] 对话历史按钮 -->
+        <button class="chat-btn" type="button" aria-label="对话历史">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+          <span class="badge"></span>
+        </button>
+      </div>
+    </header>
+
+    <!-- 视频舞台 -->
+    <div class="video-stage">
+      <!-- 模拟镜头画面 -->
+      <div class="video-bg"></div>
+      <div class="silhouette"></div>
+      <div class="wall-art"></div>
+      <div class="scanline"></div>
+
+      <!-- 新 signature #1: VAD 画面边缘光晕 -->
+      <div class="vad-glow"></div>
+
+      <!-- 旧 signature #1: 取景器四角 L 形 -->
+      <div class="corner tl"></div>
+      <div class="corner tr"></div>
+      <div class="corner bl"></div>
+      <div class="corner br"></div>
+
+      <!-- 旧 signature #1: 中心十字 -->
+      <div class="crosshair"></div>
+      <div class="crosshair-dot"></div>
+
+      <!-- 角部刻度标记 -->
+      <div class="camera-ticks">
+        <span class="tl"><span class="label">+00.00 · F2.8</span></span>
+        <span class="br"><span class="label">ISO 400 · 30fps</span></span>
+      </div>
+
+      <!-- 通道标签 -->
+      <div class="channel-tag">
+        <span class="rec-dot"></span>
+        <span>CH·01 / VISION PROBE · LIVE</span>
+      </div>
+
+      <!-- 新 signature #4: 浮动控制条胶囊 -->
+      <div class="controls" role="toolbar" aria-label="通话控制">
+        <!-- 摄像头开关 -->
+        <button class="ctrl-btn active" type="button" aria-label="摄像头">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 7l-7 5 7 5V7z"/>
+            <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+          </svg>
+        </button>
+        <!-- 麦克风 -->
+        <button class="ctrl-btn active" type="button" aria-label="麦克风">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <line x1="12" y1="19" x2="12" y2="23"/>
+            <line x1="8" y1="23" x2="16" y2="23"/>
+          </svg>
+        </button>
+        <!-- 静音 -->
+        <button class="ctrl-btn" type="button" aria-label="静音">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+            <line x1="23" y1="9" x2="17" y2="15"/>
+            <line x1="17" y1="9" x2="23" y2="15"/>
+          </svg>
+        </button>
+        <!-- 截图 -->
+        <button class="ctrl-btn" type="button" aria-label="截图">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+        </button>
+        <!-- 挂断 -->
+        <button class="ctrl-btn hangup" type="button" aria-label="挂断">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"/>
+            <line x1="23" y1="1" x2="1" y2="23" transform="rotate(135 12 12)"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- 移动端新消息提示条（仅移动端显示） -->
+      <div class="mobile-newmsg" role="status">
+        <span class="dot"></span>
+        <span>● 1 条新消息 · AI 正在回复</span>
+        <span class="arrow">↑</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 聊天面板 ============ -->
+  <aside class="chat-pane">
+    <!-- 聊天头 -->
+    <div class="chat-header">
+      <div class="title">
+        <span class="ind"></span>
+        <span>CONVERSATION LOG · STREAM DECODER</span>
+      </div>
+      <div class="meta">
+        <span>MSG <b>05</b></span>
+        <span>LAT <b>42ms</b></span>
+      </div>
+    </div>
+
+    <!-- 聊天内容 -->
+    <div class="chat-body">
+      <!-- USER 第一条 -->
+      <div class="msg user">
+        <div class="msg-tag">
+          <span class="role">USER</span>
+          <span class="time">14:32:08</span>
+        </div>
+        <div class="bubble">你好，你能看到我吗？</div>
+      </div>
+
+      <!-- AI 第一条 -->
+      <div class="msg ai">
+        <div class="msg-tag">
+          <span class="role">AI</span>
+          <span class="time">14:32:11</span>
+        </div>
+        <div class="bubble">是的，我能看到你。你戴着一副金属半框眼镜，身穿深蓝色 T 恤。身后的墙上挂着一幅风景画。</div>
+      </div>
+
+      <!-- SYS 系统消息 -->
+      <div class="msg sys">
+        <div class="msg-tag" style="justify-content: center;">
+          <span class="role">SYS</span>
+          <span class="time">14:32:09</span>
+        </div>
+        <div class="bubble">摄像头已开启 · CAMERA · ACTIVATED · 640×480 @ 30fps</div>
+      </div>
+
+      <!-- USER 第二条 -->
+      <div class="msg user">
+        <div class="msg-tag">
+          <span class="role">USER</span>
+          <span class="time">14:32:34</span>
+        </div>
+        <div class="bubble">好的，那你能听到我说话吗？</div>
+      </div>
+
+      <!-- 新 signature #5: 用户语音识别字幕（仅 speaking 状态） -->
+      <div class="asr-subtitle">
+        <span class="dot"></span>
+        <span class="label">● ASR</span>
+        <span class="text">好的，那你能听到我说话吗？</span>
+      </div>
+
+      <!-- AI 流式回复（含光标） -->
+      <div class="msg ai highlight">
+        <div class="msg-tag">
+          <span class="role">AI · STREAMING</span>
+          <span class="stream-pill">LIVE</span>
+          <span class="time">14:32:37</span>
+        </div>
+        <div class="bubble">
+          能听到，你的声音很清晰。请问有什么我可以帮你的？<span class="cursor"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 聊天底部输入提示条 -->
+    <div class="chat-footer">
+      <span class="hint-dot"></span>
+      <span>AI 正在流式回复 · 自动滚动至底部 · 点击 [💬] 查看完整历史</span>
+    </div>
+  </aside>
+</div>
+</body>
+</html>

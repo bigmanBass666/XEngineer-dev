@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XEngineer — 全屏 + 浮动字幕 × 示波器 (Mockup M7)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* =====================================================================
+   XEngineer · 第二轮 Mockup M7
+   布局 ① 全屏视频 + 浮动字幕  ×  Signature A 示波器
+   单文件静态 mockup · 仅供视觉评审 · 不连真实后端 · 不调 getUserMedia
+   ===================================================================== */
+
+:root {
+  /* === Surface (工程灰梯度) === */
+  --surface-0: #0a0a0b;
+  --surface-1: #131316;
+  --surface-2: #1c1c20;
+  --surface-3: #26262c;
+  --surface-4: #34343c;
+
+  /* === Text === */
+  --text-primary:   #f5f5f7;
+  --text-secondary: #a1a1a8;
+  --text-tertiary:  #6b6b73;
+
+  /* === Brand (朱砂红 — signature) === */
+  --brand-500: #c8453c;
+  --brand-400: #d65a52;
+  --brand-600: #a83a32;
+  --brand-glow: rgba(200, 69, 60, 0.35);
+
+  /* === Functional === */
+  --accent-success: #4ade80;
+  --accent-warning: #fbbf24;
+  --accent-danger:  #ef4444;
+
+  /* === Scope (示波器副色) === */
+  --scope-cyan: #5eead4;
+
+  /* === 字体 === */
+  --font-display: 'Noto Serif SC', 'Source Han Serif SC', 'STSong', serif;
+  --font-body:    'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-mono:    'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+
+  /* === 圆角 / 边框 === */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
+  --border-hairline: 1px solid var(--surface-3);
+  --border-brand:    1px solid var(--brand-500);
+
+  /* === 间距 === */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+}
+
+/* === Reset === */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: var(--surface-0); }
+body { font-family: var(--font-body); color: var(--text-primary); -webkit-font-smoothing: antialiased; }
+button { font-family: inherit; cursor: pointer; border: 0; background: transparent; color: inherit; }
+
+/* =====================================================================
+   STAGE — 全屏视频画面 (100vw × 100vh)
+   ===================================================================== */
+
+.stage {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--surface-0);
+}
+
+/* === 视频画面（CSS 模拟用户在镜头前的剪影） === */
+.video-scene {
+  position: absolute;
+  inset: 0;
+  background:
+    /* 顶部柔光 — 室内灯光 */
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(255, 240, 220, 0.10) 0%, transparent 60%),
+    /* 主背景墙 — 深暖灰 */
+    linear-gradient(180deg, #1f1d1a 0%, #14130f 50%, #0a0a0b 100%);
+  z-index: 0;
+}
+
+/* 墙上的画框 */
+.wall-frame {
+  position: absolute;
+  top: 22%;
+  left: 12%;
+  width: 14%;
+  aspect-ratio: 4 / 3;
+  background:
+    linear-gradient(135deg, rgba(94, 234, 212, 0.06) 0%, rgba(200, 69, 60, 0.04) 100%),
+    #1a1815;
+  border: 1px solid rgba(165, 130, 90, 0.25);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  z-index: 1;
+}
+.wall-frame::before {
+  content: '风景';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 14px;
+  color: rgba(165, 130, 90, 0.4);
+  letter-spacing: 0.3em;
+}
+
+/* 人物剪影 — 模拟用户坐在镜头前 */
+.person-silhouette {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: 42%;
+  height: 78%;
+  background:
+    /* 头部 */
+    radial-gradient(ellipse 36% 22% at 50% 16%, #3a3633 0%, #2a2723 60%, transparent 80%),
+    /* 肩膀 + 身体 */
+    linear-gradient(180deg, transparent 0%, #2a2723 28%, #1c1a17 100%);
+  border-radius: 50% 50% 0 0 / 28% 28% 0 0;
+  filter: blur(0.4px);
+  z-index: 2;
+}
+
+/* 眼镜反光提示 — 标识用户佩戴眼镜 */
+.glasses-reflection {
+  position: absolute;
+  left: 50%;
+  bottom: 40%;
+  transform: translateX(-50%);
+  width: 16%;
+  height: 1.5%;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(94, 234, 212, 0.55) 25%,
+    rgba(94, 234, 212, 0.15) 50%,
+    rgba(94, 234, 212, 0.55) 75%,
+    transparent);
+  border-radius: 50%;
+  filter: blur(0.5px);
+  z-index: 3;
+}
+
+/* 画面右上角小标签 */
+.cam-label {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--surface-3);
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.cam-label::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--brand-500);
+  border-radius: 50%;
+  box-shadow: 0 0 6px var(--brand-glow);
+  animation: pulse-dot 1.2s ease-in-out infinite;
+}
+
+/* 画面扫描线 + 噪点叠加 — 增强示波器/CRT 质感 */
+.scan-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  background-image:
+    repeating-linear-gradient(0deg,
+      rgba(0,0,0,0.06) 0px,
+      rgba(0,0,0,0.06) 1px,
+      transparent 1px,
+      transparent 3px);
+  mix-blend-mode: multiply;
+  opacity: 0.5;
+}
+
+/* 顶部扫描线 — 示波器风格缓慢扫过 */
+.scope-scan {
+  position: absolute;
+  left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(94, 234, 212, 0.35) 30%,
+    rgba(94, 234, 212, 0.6) 50%,
+    rgba(94, 234, 212, 0.35) 70%,
+    transparent);
+  z-index: 4;
+  pointer-events: none;
+  box-shadow: 0 0 12px rgba(94, 234, 212, 0.4);
+  animation: scope-scan-move 4.5s linear infinite;
+}
+@keyframes scope-scan-move {
+  0%   { top: 0%; opacity: 0; }
+  8%   { opacity: 0.8; }
+  92%  { opacity: 0.8; }
+  100% { top: 100%; opacity: 0; }
+}
+
+/* 画面左下角技术参数签 (桌面/平板) */
+.cam-meta {
+  position: absolute;
+  left: 24px;
+  bottom: 92px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  line-height: 1.5;
+}
+.cam-meta span b { color: var(--scope-cyan); font-weight: 500; }
+
+/* =====================================================================
+   SIGNATURE 旧 #1: 取景器十字线（四角 L 形 + 中心十字 hairline）
+   ===================================================================== */
+
+.corner {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border-color: var(--brand-500);
+  border-style: solid;
+  border-width: 0;
+  z-index: 11;
+  pointer-events: none;
+  filter: drop-shadow(0 0 4px var(--brand-glow));
+}
+.corner.tl { top: 28px;    left: 28px;    border-top-width: 2px; border-left-width: 2px; }
+.corner.tr { top: 28px;    right: 28px;   border-top-width: 2px; border-right-width: 2px; }
+.corner.bl { bottom: 28px; left: 28px;    border-bottom-width: 2px; border-left-width: 2px; }
+.corner.br { bottom: 28px; right: 28px;   border-bottom-width: 2px; border-right-width: 2px; }
+
+.crosshair {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 48px;
+  height: 48px;
+  z-index: 6;
+  mix-blend-mode: difference;
+  pointer-events: none;
+}
+.crosshair::before,
+.crosshair::after {
+  content: '';
+  position: absolute;
+  background: #ffffff;
+}
+.crosshair::before {
+  top: 50%; left: 0; right: 0;
+  height: 1.5px;
+  transform: translateY(-50%);
+}
+.crosshair::after {
+  left: 50%; top: 0; bottom: 0;
+  width: 1.5px;
+  transform: translateX(-50%);
+}
+
+/* 中心十字圆环（增强可见性） */
+.crosshair-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--brand-500);
+  border-radius: 50%;
+  z-index: 6;
+  pointer-events: none;
+  box-shadow: 0 0 8px var(--brand-glow);
+  animation: ring-pulse 2s ease-in-out infinite;
+}
+@keyframes ring-pulse {
+  0%, 100% { opacity: 0.7; transform: translate(-50%, -50%) scale(1); }
+  50%      { opacity: 1;   transform: translate(-50%, -50%) scale(1.15); }
+}
+
+/* =====================================================================
+   SIGNATURE 新 #1: VAD 画面边缘光晕（speaking 时朱砂红呼吸）
+   ===================================================================== */
+
+.vad-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+  box-shadow:
+    inset 0 0 60px var(--brand-500),
+    inset 0 0 120px var(--brand-glow),
+    inset 0 0 200px rgba(200, 69, 60, 0.18);
+  opacity: 0.55;
+  animation: vad-breathe 1.2s ease-in-out infinite;
+}
+@keyframes vad-breathe {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1; }
+}
+
+/* VAD 边缘高亮带 — 加强可见性 */
+.vad-edge {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+  background:
+    linear-gradient(180deg, var(--brand-glow) 0%, transparent 14%),
+    linear-gradient(0deg,   var(--brand-glow) 0%, transparent 14%),
+    linear-gradient(90deg,  var(--brand-glow) 0%, transparent 8%),
+    linear-gradient(270deg, var(--brand-glow) 0%, transparent 8%);
+  opacity: 0.7;
+  animation: vad-breathe 1.2s ease-in-out infinite;
+  mix-blend-mode: screen;
+}
+
+/* VAD 状态角标（左下角小红标） */
+.vad-tag {
+  position: absolute;
+  left: 24px;
+  bottom: 130px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(0,0,0,0.5);
+  border: 1px solid var(--brand-500);
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--brand-400);
+  text-transform: uppercase;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.vad-tag::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--brand-500);
+  border-radius: 50%;
+  box-shadow: 0 0 6px var(--brand-glow);
+  animation: pulse-dot 1.2s ease-in-out infinite;
+}
+
+/* =====================================================================
+   顶部浮动状态栏
+   ===================================================================== */
+
+.top-bar {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  right: 16px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 16px;
+  background: rgba(10, 10, 11, 0.55);
+  border: 1px solid var(--surface-3);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+}
+
+.top-row-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.top-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  min-width: 0;
+  flex: 1;
+}
+
+/* SIGNATURE 新 #2: 通话计时器 ● 00:42 */
+.call-timer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+.call-timer .live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--brand-500);
+  box-shadow: 0 0 8px var(--brand-glow);
+  animation: pulse-dot 1.2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+.call-timer .time { font-variant-numeric: tabular-nums; }
+
+/* 连接质量 */
+.conn-quality {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.conn-quality .signal-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 1.5px;
+  height: 12px;
+}
+.conn-quality .signal-bars span {
+  width: 2.5px;
+  background: var(--accent-success);
+  border-radius: 1px;
+}
+.conn-quality .signal-bars span:nth-child(1) { height: 30%; }
+.conn-quality .signal-bars span:nth-child(2) { height: 55%; }
+.conn-quality .signal-bars span:nth-child(3) { height: 80%; }
+.conn-quality .signal-bars span:nth-child(4) { height: 100%; opacity: 0.35; }
+
+.top-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-shrink: 0;
+}
+
+/* SIGNATURE 新 #3: AI 状态四态指示 */
+.ai-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px 4px 8px;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid var(--surface-3);
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  position: relative;
+  min-width: 130px;
+  height: 26px;
+  justify-content: flex-start;
+}
+.ai-state .ai-state-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.ai-state .ai-state-text {
+  position: relative;
+  width: 90px;
+  height: 14px;
+  overflow: hidden;
+}
+.ai-state .ai-state-text span {
+  position: absolute;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  color: var(--text-secondary);
+}
+/* 4 态循环：IDLE(0-3s) → LISTENING(3-6s) → THINKING(6-9s) → SPEAKING(9-12s) */
+.ai-state .st-idle      { animation: state-show 12s infinite;        color: var(--text-tertiary); }
+.ai-state .st-listening { animation: state-show 12s infinite; animation-delay: 3s; color: var(--scope-cyan); }
+.ai-state .st-thinking  { animation: state-show 12s infinite; animation-delay: 6s; color: var(--accent-warning); }
+.ai-state .st-speaking  { animation: state-show 12s infinite; animation-delay: 9s; color: var(--brand-400); }
+@keyframes state-show {
+  0%, 23%   { opacity: 1; }
+  25%, 98%  { opacity: 0; }
+  100%      { opacity: 0; }
+}
+/* 对应 dot 颜色循环 */
+.ai-state .ai-state-dot {
+  background: var(--text-tertiary);
+  animation: dot-idle 12s infinite;
+}
+@keyframes dot-idle {
+  0%, 23%   { background: var(--text-tertiary); box-shadow: none; }
+  25%, 48%  { background: var(--scope-cyan); box-shadow: 0 0 6px var(--scope-cyan); }
+  50%, 73%  { background: var(--accent-warning); box-shadow: 0 0 6px var(--accent-warning); }
+  75%, 98%  { background: var(--brand-500); box-shadow: 0 0 6px var(--brand-glow); }
+  100%      { background: var(--text-tertiary); }
+}
+
+/* 历史按钮 — 💬 带未读小红点 */
+.history-btn {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid var(--surface-3);
+  border-radius: var(--radius-md);
+  font-size: 16px;
+  color: var(--text-primary);
+  transition: all 0.2s ease;
+}
+.history-btn:hover { border-color: var(--brand-500); background: rgba(200,69,60,0.12); }
+.history-btn .unread-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  background: var(--brand-500);
+  border: 1.5px solid var(--surface-0);
+  border-radius: 50%;
+  box-shadow: 0 0 6px var(--brand-glow);
+}
+
+/* SIGNATURE 旧 #2: 数据读数条 — 顶部状态栏第二行 */
+.top-row-data {
+  display: none;
+  align-items: center;
+  gap: var(--space-5);
+  padding-top: 6px;
+  border-top: 1px solid var(--surface-3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+.data-readout {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.data-readout .key { color: var(--text-tertiary); }
+.data-readout .val { color: var(--text-secondary); }
+.data-readout .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.dot-ws-on    { background: var(--accent-success); box-shadow: 0 0 6px var(--accent-success); }
+.dot-vad-on   { background: var(--brand-500); box-shadow: 0 0 6px var(--brand-glow); animation: pulse-dot 1.2s ease-in-out infinite; }
+.data-readout .val.cyan { color: var(--scope-cyan); }
+
+/* =====================================================================
+   浮动 AI 字幕条 — 智能显隐
+   ===================================================================== */
+
+.subtitle-bar {
+  position: absolute;
+  left: 50%;
+  bottom: 124px;
+  transform: translateX(-50%);
+  width: calc(100% - 48px);
+  max-width: 800px;
+  z-index: 8;
+  padding: 14px 18px 12px;
+  background: rgba(0, 0, 0, 0.62);
+  border: 1px solid var(--surface-3);
+  border-left: 2px solid var(--brand-500);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  /* 智能显隐 — mockup 中保持显示，但带 fade-in 动画演示浮现效果 */
+  animation: subtitle-show 0.3s ease-out;
+}
+@keyframes subtitle-show {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.subtitle-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+}
+.subtitle-head .ai-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--brand-400);
+}
+.subtitle-head .ai-tag::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  background: var(--brand-500);
+  border-radius: 50%;
+  box-shadow: 0 0 5px var(--brand-glow);
+  animation: pulse-dot 1.2s ease-in-out infinite;
+}
+.subtitle-head .streaming-label {
+  color: var(--scope-cyan);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.subtitle-head .streaming-label::before {
+  content: '●';
+  font-size: 8px;
+  animation: pulse-dot 0.8s ease-in-out infinite;
+}
+
+.subtitle-text {
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--text-primary);
+  letter-spacing: 0.01em;
+}
+
+/* SIGNATURE 旧 #3: 流式回复光标 — 朱砂红方块呼吸 */
+.stream-cursor {
+  display: inline-block;
+  width: 8px;
+  height: 16px;
+  margin-left: 2px;
+  vertical-align: -3px;
+  background: var(--brand-500);
+  box-shadow: 0 0 6px var(--brand-glow);
+  animation: cursor-breathe 0.8s ease-in-out infinite;
+}
+@keyframes cursor-breathe {
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 1; }
+}
+
+.subtitle-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  gap: 12px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+/* SIGNATURE 新 #5: 用户语音识别字幕 — 仅 speaking 时显示 */
+.asr-mini {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--scope-cyan);
+}
+.asr-mini::before {
+  content: '●';
+  color: var(--scope-cyan);
+  font-size: 8px;
+  animation: pulse-dot 1.2s ease-in-out infinite;
+}
+.asr-mini .asr-label {
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+}
+.asr-mini .asr-text {
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+}
+
+/* "点击查看完整对话" 提示 */
+.view-hint {
+  color: var(--text-tertiary);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.view-hint::before { content: '💬'; font-size: 11px; opacity: 0.7; }
+
+/* =====================================================================
+   底部浮动控制条 — SIGNATURE 新 #4 胶囊
+   ===================================================================== */
+
+.control-bar {
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.42);
+  border: 1px solid var(--brand-500);
+  border-radius: 9999px;
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  box-shadow:
+    0 8px 32px rgba(0,0,0,0.5),
+    0 0 24px var(--brand-glow);
+}
+
+.ctrl-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(28, 28, 32, 0.6);
+  border: 1px solid var(--surface-3);
+  color: var(--text-primary);
+  font-size: 18px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+.ctrl-btn:hover {
+  background: rgba(200, 69, 60, 0.18);
+  border-color: var(--brand-500);
+  transform: translateY(-1px);
+}
+.ctrl-btn.off {
+  background: rgba(239, 68, 68, 0.18);
+  border-color: var(--accent-danger);
+  color: var(--accent-danger);
+}
+
+/* 挂断按钮 — 红色 + 与其他按钮间距更大 */
+.ctrl-btn.hangup {
+  margin-left: 12px;
+  background: var(--accent-danger);
+  border-color: var(--accent-danger);
+  color: #fff;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+}
+.ctrl-btn.hangup:hover {
+  background: #dc2626;
+  transform: translateY(-1px) scale(1.02);
+}
+
+/* 控制条左下角小数据签 */
+.ctrl-meta {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* =====================================================================
+   首次引导提示 — 2 秒后淡出
+   ===================================================================== */
+
+.onboarding {
+  position: absolute;
+  top: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 12;
+  padding: 8px 16px;
+  background: rgba(0,0,0,0.7);
+  border: 1px solid var(--brand-500);
+  border-radius: var(--radius-lg);
+  font-family: var(--font-body);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--text-primary);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 0 20px var(--brand-glow);
+  pointer-events: none;
+  white-space: nowrap;
+  /* 总共 6 秒动画：1s 渐显 → 4s 可见 → 1s 淡出 */
+  animation: onboarding-fade 6s ease-out forwards;
+}
+.onboarding::before {
+  content: '💬';
+  margin-right: 6px;
+  font-size: 13px;
+}
+@keyframes onboarding-fade {
+  0%   { opacity: 0; transform: translateX(-50%) translateY(-6px); }
+  15%  { opacity: 1; transform: translateX(-50%) translateY(0); }
+  85%  { opacity: 1; transform: translateX(-50%) translateY(0); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-4px); visibility: hidden; }
+}
+
+/* =====================================================================
+   通用动画
+   ===================================================================== */
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.45; }
+}
+
+/* =====================================================================
+   响应式 — sm-md (640-1023px) 平板
+   ===================================================================== */
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .top-bar { padding: 12px 20px; }
+  .subtitle-bar { width: calc(100% - 32px); }
+  .control-bar { gap: 10px; }
+  .ctrl-btn { width: 48px; height: 48px; font-size: 18px; }
+  .ctrl-btn.hangup { margin-left: 14px; }
+}
+
+/* =====================================================================
+   响应式 — lg+ (≥1024px) 桌面
+   ===================================================================== */
+
+@media (min-width: 1024px) {
+  .top-bar {
+    top: 24px;
+    left: 24px;
+    right: 24px;
+    padding: 14px 22px;
+  }
+  .top-row-data {
+    display: flex;
+  }
+  .subtitle-bar {
+    bottom: 132px;
+    padding: 18px 24px 14px;
+  }
+  .subtitle-text { font-size: 16px; }
+  .control-bar {
+    bottom: 32px;
+    max-width: 480px;
+    gap: 10px;
+    padding: 10px;
+  }
+  .ctrl-btn { width: 52px; height: 52px; font-size: 20px; }
+  .ctrl-btn.hangup { margin-left: 18px; }
+  .corner { width: 32px; height: 32px; }
+  .corner.tl { top: 36px; left: 36px; }
+  .corner.tr { top: 36px; right: 36px; }
+  .corner.bl { bottom: 36px; left: 36px; }
+  .corner.br { bottom: 36px; right: 36px; }
+  .crosshair { width: 56px; height: 56px; }
+  .crosshair-ring { width: 20px; height: 20px; }
+}
+
+/* =====================================================================
+   响应式 — xs (<640px) 手机
+   ===================================================================== */
+
+@media (max-width: 639px) {
+  .top-bar {
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    padding: 8px 12px;
+    gap: 4px;
+  }
+  .top-row-main { gap: var(--space-2); }
+  .top-left { gap: var(--space-3); }
+  .call-timer { font-size: 12px; }
+  .call-timer .live-dot { width: 6px; height: 6px; }
+  .conn-quality { display: none; } /* xs 隐藏连接质量 */
+  .ai-state {
+    min-width: 100px;
+    height: 22px;
+    padding: 2px 8px 2px 6px;
+    font-size: 10px;
+  }
+  .ai-state .ai-state-text { width: 70px; height: 12px; }
+  .history-btn { width: 28px; height: 28px; font-size: 14px; }
+
+  /* 字幕条全宽浮动 + 较小字号 */
+  .subtitle-bar {
+    bottom: 100px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-width: none;
+    transform: none;
+    padding: 10px 12px 8px;
+    border-radius: var(--radius-md);
+  }
+  @keyframes subtitle-show {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .subtitle-text { font-size: 13px; line-height: 1.5; }
+  .subtitle-head { font-size: 9px; margin-bottom: 4px; }
+  .subtitle-foot { font-size: 9px; margin-top: 6px; }
+  .asr-mini .asr-text { font-size: 10px; }
+
+  /* 控制条全宽 + 5 按钮 40×40px (满足 44px 触控目标: 用 padding 补足) */
+  .control-bar {
+    left: 12px;
+    right: 12px;
+    bottom: 16px;
+    transform: none;
+    width: auto;
+    max-width: none;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px;
+    border-radius: 9999px;
+  }
+  .ctrl-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 15px;
+  }
+  .ctrl-btn.hangup { margin-left: 10px; }
+
+  /* 取景器四角 + 十字线缩小 */
+  .corner { width: 22px; height: 22px; }
+  .corner.tl { top: 18px; left: 18px; }
+  .corner.tr { top: 18px; right: 18px; }
+  .corner.bl { bottom: 18px; left: 18px; }
+  .corner.br { bottom: 18px; right: 18px; }
+  .crosshair { width: 32px; height: 32px; }
+  .crosshair-ring { width: 12px; height: 12px; }
+  .vad-tag { display: none; } /* xs 隐藏，避免与控制条冲突 */
+  .cam-label { font-size: 9px; padding: 3px 8px; top: 12px; right: 12px; }
+
+  .onboarding { font-size: 12px; padding: 8px 14px; }
+}
+
+/* =====================================================================
+   极小屏 (<375px) 进一步收缩
+   ===================================================================== */
+
+@media (max-width: 374px) {
+  .ctrl-btn { width: 36px; height: 36px; font-size: 14px; }
+  .ctrl-btn.hangup { margin-left: 8px; }
+  .subtitle-text { font-size: 12px; }
+}
+
+/* =====================================================================
+   横屏适配（手机横屏）
+   ===================================================================== */
+
+@media (max-width: 1023px) and (orientation: landscape) and (max-height: 500px) {
+  .subtitle-bar { bottom: 80px; }
+  .control-bar { bottom: 12px; }
+  .top-bar { padding: 6px 12px; }
+}
+</style>
+</head>
+<body>
+
+<!-- =====================================================================
+     STAGE — 全屏视频画面
+     ===================================================================== -->
+<div class="stage">
+
+  <!-- 视频画面（CSS 模拟用户在镜头前） -->
+  <div class="video-scene">
+    <div class="wall-frame"></div>
+    <div class="person-silhouette"></div>
+    <div class="glasses-reflection"></div>
+  </div>
+
+  <!-- 扫描线 + 噪点叠加 -->
+  <div class="scan-overlay"></div>
+  <div class="scope-scan"></div>
+
+  <!-- 画面右上角小标签 -->
+  <div class="cam-label">CAM · 1280×720</div>
+
+  <!-- 画面左下角技术参数签 -->
+  <div class="cam-meta">
+    <span>INPUT · <b>H.264 / 30fps</b></span>
+    <span>LATENCY · <b>84ms</b></span>
+    <span>BANDWIDTH · <b>1.2 Mbps</b></span>
+  </div>
+
+  <!-- SIGNATURE 新 #1: VAD 画面边缘光晕（speaking 时呼吸） -->
+  <div class="vad-glow"></div>
+  <div class="vad-edge"></div>
+
+  <!-- VAD 状态角标（左下） -->
+  <div class="vad-tag">VAD · SPEAKING</div>
+
+  <!-- SIGNATURE 旧 #1: 取景器十字线 -->
+  <div class="corner tl"></div>
+  <div class="corner tr"></div>
+  <div class="corner bl"></div>
+  <div class="corner br"></div>
+  <div class="crosshair"></div>
+  <div class="crosshair-ring"></div>
+
+  <!-- =====================================================================
+       顶部浮动状态栏
+       ===================================================================== -->
+  <header class="top-bar">
+    <div class="top-row-main">
+      <div class="top-left">
+        <!-- SIGNATURE 新 #2: 通话计时器 -->
+        <div class="call-timer">
+          <span class="live-dot"></span>
+          <span class="time">00:42</span>
+        </div>
+        <!-- 连接质量 -->
+        <div class="conn-quality">
+          <div class="signal-bars">
+            <span></span><span></span><span></span><span></span>
+          </div>
+          <span>连接良好</span>
+        </div>
+      </div>
+
+      <div class="top-right">
+        <!-- SIGNATURE 新 #3: AI 状态四态指示 -->
+        <div class="ai-state" title="AI 状态">
+          <span class="ai-state-dot"></span>
+          <span class="ai-state-text">
+            <span class="st-idle">IDLE</span>
+            <span class="st-listening">LISTENING</span>
+            <span class="st-thinking">THINKING</span>
+            <span class="st-speaking">SPEAKING</span>
+          </span>
+        </div>
+        <!-- 历史按钮 — 💬 带未读小红点 -->
+        <button class="history-btn" aria-label="查看对话历史">
+          💬
+          <span class="unread-dot"></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- SIGNATURE 旧 #2: 数据读数条 — 第二行（仅 lg+ 显示） -->
+    <div class="top-row-data">
+      <div class="data-readout">
+        <span class="dot dot-ws-on"></span>
+        <span class="key">WS</span>
+        <span class="val">CONNECTED</span>
+      </div>
+      <div class="data-readout">
+        <span class="dot dot-vad-on"></span>
+        <span class="key">VAD</span>
+        <span class="val">SPEAKING</span>
+      </div>
+      <div class="data-readout">
+        <span class="key">SR</span>
+        <span class="val cyan">24kHz</span>
+      </div>
+      <div class="data-readout">
+        <span class="key">CODEC</span>
+        <span class="val">OPUS</span>
+      </div>
+      <div class="data-readout">
+        <span class="key">VER</span>
+        <span class="val">v0.1.0</span>
+      </div>
+      <div class="data-readout" style="margin-left:auto">
+        <span class="key">CH</span>
+        <span class="val">01 / 02</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- =====================================================================
+       浮动 AI 字幕条 — 智能显隐
+       ===================================================================== -->
+  <div class="subtitle-bar">
+    <div class="subtitle-head">
+      <span class="ai-tag">AI · GLM-4V</span>
+      <span class="streaming-label">STREAMING</span>
+    </div>
+    <div class="subtitle-text">
+      能听到，你的声音很清晰。请问有什么我可以帮你的？<span class="stream-cursor"></span>
+    </div>
+    <div class="subtitle-foot">
+      <!-- SIGNATURE 新 #5: 用户语音识别字幕（仅 speaking 时显示） -->
+      <div class="asr-mini">
+        <span class="asr-label">ASR ·</span>
+        <span class="asr-text">"好的，那你能听到我说话吗？"</span>
+      </div>
+      <div class="view-hint">点击 💬 查看完整对话</div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       底部浮动控制条 — SIGNATURE 新 #4 胶囊
+       ===================================================================== -->
+  <div class="control-bar">
+    <button class="ctrl-btn" title="摄像头开关" aria-label="摄像头开关">📹</button>
+    <button class="ctrl-btn" title="麦克风开关" aria-label="麦克风开关">🎤</button>
+    <button class="ctrl-btn" title="静音" aria-label="静音">🔇</button>
+    <button class="ctrl-btn" title="截图" aria-label="截图">📷</button>
+    <button class="ctrl-btn hangup" title="挂断" aria-label="挂断">⏹</button>
+  </div>
+
+  <!-- 首次引导提示 — 2 秒后淡出 -->
+  <div class="onboarding">点击 💬 查看对话历史</div>
+
+</div>
+
+</body>
+</html>
