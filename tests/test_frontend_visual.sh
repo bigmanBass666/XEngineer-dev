@@ -10,7 +10,7 @@
 set -uo pipefail
 
 # --- 配置 ---
-FRONTEND_URL="https://xengineer-frontend.netlify.app"
+FRONTEND_URL="https://optalk.netlify.app"
 SCREENSHOT_DIR="/home/z/my-project/download/frontend-test"
 TIMEOUT_SECS=15
 

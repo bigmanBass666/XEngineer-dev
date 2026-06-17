@@ -27,7 +27,7 @@ HEALTH=$(curl -sf --max-time 10 https://xengineer-dev-production.up.railway.app/
 # 2. 前端页面可访问
 echo ""
 echo "═══ 2. 前端页面可访问 ═══"
-STATUS=$(curl -sf -o /dev/null -w "%{http_code}" --max-time 10 https://xengineer-frontend.netlify.app 2>/dev/null) || STATUS="000"
+STATUS=$(curl -sf -o /dev/null -w "%{http_code}" --max-time 10 https://optalk.netlify.app 2>/dev/null) || STATUS="000"
 [ "$STATUS" = "200" ] && check_pass "前端 HTTP $STATUS" || check_fail "前端 HTTP $STATUS"
 
 # 3. 沙箱 TTS→ASR 独立验证

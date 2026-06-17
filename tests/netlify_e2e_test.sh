@@ -2,7 +2,7 @@
 # =============================================================================
 # XEngineer Netlify 线上全真自动化测试
 #
-# 测试目标: https://xengineer-frontend.netlify.app
+# 测试目标: https://optalk.netlify.app
 # 测试内容:
 #   1. 页面加载 & WebSocket 连接
 #   2. "发送测试消息" 按钮 → UI 更新（用户消息 + 系统回显）
@@ -16,7 +16,7 @@
 
 set -uo pipefail
 
-FRONTEND_URL="https://xengineer-frontend.netlify.app"
+FRONTEND_URL="https://optalk.netlify.app"
 OUTPUT_DIR="/home/z/my-project/download/netlify-e2e"
 FIXTURE_HOOK="/home/z/my-project/XEngineer/tests/fixtures/mock_getusermedia.js"
 FIXTURE_AUDIO="/home/z/my-project/XEngineer/tests/fixtures/test_audio_set.json"

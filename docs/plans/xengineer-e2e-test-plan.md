@@ -15,7 +15,7 @@
 ## 二、当前现状（2026-06-17 实际调研）
 
 ### 2.1 前端（Netlify）✅ 已就绪
-- 地址: `https://xengineer-frontend.netlify.app`
+- 地址: `https://optalk.netlify.app`
 - 部署: 自动构建已配置（GitHub push → Netlify build hook → 自动部署）
 - UI 状态: 页面渲染正常，按钮可点击，视频镜像，无 JS 错误
 - 已验证: 18/18 基础自动化测试通过
@@ -49,7 +49,7 @@ cmd = "cd xengineer-backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
 同时 `xengineer-backend/runtime.txt` 指定 `python-3.12.0`，可能版本冲突。
 
 ### 2.4 前端 WS 地址断裂
-当前 `useWebSocket.ts` 第 4 行 fallback 走 `wss://xengineer-frontend.netlify.app:8000/ws`，
+当前 `useWebSocket.ts` 第 4 行 fallback 走 `wss://optalk.netlify.app:8000/ws`，
 后端实际在 `wss://xengineer-dev-production.up.railway.app/ws`。
 
 ---

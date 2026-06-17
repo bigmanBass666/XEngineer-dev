@@ -27,7 +27,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # --- 配置 ---
-FRONTEND_URL="https://xengineer-frontend.netlify.app"
+FRONTEND_URL="https://optalk.netlify.app"
 OUTPUT_DIR="/home/z/my-project/download/browser-e2e"
 FIXTURE_AUDIO="$SCRIPT_DIR/fixtures/test_audio_set.json"
 FIXTURE_HOOK="$SCRIPT_DIR/fixtures/mock_getusermedia.js"
