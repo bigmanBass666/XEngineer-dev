@@ -10,6 +10,7 @@ VAD 驱动的 ASR 会话生命周期:
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Optional
 
