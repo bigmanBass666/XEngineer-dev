@@ -4,8 +4,17 @@
 > 依据:
 > - 设计原则: `/home/z/my-project/skills/frontend-design/SKILL.md`（anthropics frontend-design）
 > - 代码现状: `docs/ui-research/frontend-structure.md`（subagent-D 摘要）
+> - 调试依赖性: `docs/ui-research/debug-dependency-analysis.md`（subagent-R1 报告）
 > - 视觉现状: `/home/z/my-project/download/ui-baseline/`（7 张 baseline 截图）
 > 写作者: main agent | 日期: 2026-06-17
+
+> ⚠️ **当前状态: 布局重设计讨论中**
+>
+> 第一轮 6 个 mockup（`docs/ui-mockups/A-F`）虽然视觉效果良好，但用户指出"不像视频通话应用"——根因是布局（左右双栏调试面板）而非配色。
+>
+> 已开启第二轮布局重设计讨论，详见: [`docs/plans/layout-redesign-discussion.md`](./layout-redesign-discussion.md)
+>
+> 本文档 §2-§4 的 signature 概念 / design tokens / 组件级改造清单基于**旧布局**编写，**将在新布局选定后重写**。当前仅 §1（设计简报）、§7（不做的事）、§9（mockup 评审流程）、§10（子代理执行编排预案）仍然有效。
 
 ---
 
