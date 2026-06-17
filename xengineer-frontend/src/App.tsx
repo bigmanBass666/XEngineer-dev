@@ -17,6 +17,7 @@ function App() {
   const [vadStatus, setVadStatus] = useState<VADStatus>('silent')
   const [shouldCapture, setShouldCapture] = useState(false)
   const currentResponseRef = useRef('')
+  const isAIProcessingRef = useRef(false)  // 用 ref 追踪 AI 处理状态，避免触发 useEffect 重跑
   const chatEndRef = useRef<HTMLDivElement>(null)
   const chatContainerRef = useRef<HTMLDivElement>(null)
 
@@ -31,6 +32,15 @@ function App() {
   }, [messages, currentAIResponse, scrollToBottom])
 
   // 处理后端消息
+  //
+  // 关键修复：useEffect 依赖数组中不包含 isAIProcessing。
+  // 之前的 Bug：useEffect(..., [onMessage, isAIProcessing])
+  //   llm_chunk 中 setIsAIProcessing(true) 触发 useEffect 重跑，
+  //   导致旧 onMessage handler 被取消订阅、新 handler 注册，
+  //   在切换窗口期 tts_end 到达时 currentResponseRef.current 为空 → 空 AI 气泡。
+  // 修复：isAIProcessingRef (useRef) 用于 handler 内部判断，
+  //   isAIProcessing (useState) 仅用于 UI 显示，
+  //   useEffect 只依赖 [onMessage]，handler 只注册一次。
   useEffect(() => {
     const unsub = onMessage((msg: ServerMessage) => {
       switch (msg.type) {
@@ -46,7 +56,10 @@ function App() {
           }])
           break
         case 'llm_chunk':
-          if (!isAIProcessing) setIsAIProcessing(true)
+          if (!isAIProcessingRef.current) {
+            isAIProcessingRef.current = true
+            setIsAIProcessing(true)
+          }
           currentResponseRef.current += msg.text
           setCurrentAIResponse(currentResponseRef.current)
           break
@@ -56,16 +69,20 @@ function App() {
           break
         case 'tts_end':
           if (currentResponseRef.current) {
+            const finalText = currentResponseRef.current
+            currentResponseRef.current = ''
             setMessages(prev => [...prev, {
               id: crypto.randomUUID(),
               role: 'assistant',
-              content: currentResponseRef.current,
+              content: finalText,
               timestamp: Date.now()
             }])
-            currentResponseRef.current = ''
             setCurrentAIResponse('')
           }
-          setIsAIProcessing(false)
+          if (isAIProcessingRef.current) {
+            isAIProcessingRef.current = false
+            setIsAIProcessing(false)
+          }
           break
         case 'status':
           console.log('[Status]', msg.message)
@@ -82,12 +99,15 @@ function App() {
           break
         case 'error':
           console.error('[Error]', msg.message)
-          setIsAIProcessing(false)
+          if (isAIProcessingRef.current) {
+            isAIProcessingRef.current = false
+            setIsAIProcessing(false)
+          }
           break
       }
     })
     return unsub
-  }, [onMessage, isAIProcessing])
+  }, [onMessage])  // 修复：移除 isAIProcessing 依赖
 
   // 发送测试消息
   const sendTest = useCallback(() => {
