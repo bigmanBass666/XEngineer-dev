@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XEngineer — Mockup M13 · Floating × Oscilloscope (布局④)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* =====================================================================
+   XEngineer · Mockup M13 — Floating × Oscilloscope
+   布局 ④ 浮动全功能 × 示波器 signature
+   单文件静态 mockup · 仅供视觉评审 · 无 JS · 不连真实后端
+   ===================================================================== */
+
+:root {
+  /* === Surface (工程灰梯度) === */
+  --surface-0: #0a0a0b;
+  --surface-1: #131316;
+  --surface-2: #1c1c20;
+  --surface-3: #26262c;
+  --surface-4: #34343c;
+
+  /* === Text === */
+  --text-primary:   #f5f5f7;
+  --text-secondary: #a1a1a8;
+  --text-tertiary:  #6b6b73;
+  --text-inverse:   #0a0a0b;
+
+  /* === Brand (朱砂红 — signature) === */
+  --brand-500: #c8453c;
+  --brand-400: #d65a52;
+  --brand-600: #a83a32;
+  --brand-glow: rgba(200, 69, 60, 0.35);
+
+  /* === Functional === */
+  --accent-success: #4ade80;
+  --accent-warning: #fbbf24;
+  --accent-danger:  #ef4444;
+
+  /* === Technical (示波器风格) === */
+  --grid-line: rgba(255, 255, 255, 0.04);
+  --grid-line-strong: rgba(255, 255, 255, 0.08);
+  --scope-cyan: #5eead4;
+  --scope-amber: #fbbf24;
+
+  /* === 字体 === */
+  --font-display: 'Noto Serif SC', 'Source Han Serif SC', 'STSong', serif;
+  --font-body: 'Noto Sans SC', 'Source Han Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+
+  /* === 间距 === */
+  --space-1: 4px;  --space-2: 8px;  --space-3: 12px;
+  --space-4: 16px; --space-6: 24px; --space-8: 32px;
+  --space-12: 48px;
+
+  /* === 圆角 === */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
+  --radius-xl: 14px;
+  --radius-pill: 9999px;
+
+  /* === 边框 === */
+  --border-hairline: 1px solid rgba(255, 255, 255, 0.08);
+  --border-brand: 1px solid var(--brand-500);
+
+  /* === 阴影 === */
+  --shadow-float: 0 8px 32px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.05) inset;
+  --shadow-brand-glow: 0 0 24px var(--brand-glow);
+  --shadow-pill: 0 12px 36px rgba(0,0,0,0.55), 0 1px 0 rgba(255,255,255,0.06) inset;
+
+  /* === 浮动元素通用 === */
+  --float-bg: rgba(15, 15, 18, 0.55);
+  --float-bg-strong: rgba(15, 15, 18, 0.72);
+  --float-blur: 20px;
+
+  /* === 动效 === */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 150ms;
+  --dur-base: 250ms;
+  --dur-slow: 500ms;
+  --dur-sig: 1200ms;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--surface-0);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+}
+
+/* === Stage — 全屏视频容器 === */
+.stage {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #0d0d10;
+}
+
+/* === 模拟摄像头画面 — 工程师剪影 + 渐变光照 === */
+.video-feed {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 35%, rgba(94, 234, 212, 0.10) 0%, transparent 55%),
+    radial-gradient(ellipse 80% 70% at 50% 70%, rgba(200, 69, 60, 0.14) 0%, transparent 60%),
+    linear-gradient(160deg, #1c1c22 0%, #14141a 40%, #0a0a0d 100%);
+}
+/* 人物轮廓剪影 */
+.video-feed::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: 38%;
+  height: 86%;
+  background:
+    radial-gradient(ellipse 32% 22% at 50% 14%, #3a3a42 0%, #2c2c34 60%, transparent 80%),
+    linear-gradient(180deg, transparent 0%, #2c2c34 20%, #1f1f25 100%);
+  border-radius: 50% 50% 0 0 / 26% 26% 0 0;
+  filter: blur(0.6px);
+}
+/* 眼镜反光提示 */
+.video-feed::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 33%;
+  transform: translateX(-50%);
+  width: 16%;
+  height: 1.4%;
+  background: linear-gradient(90deg, transparent, rgba(94, 234, 212, 0.65) 30%, rgba(94, 234, 212, 0.65) 70%, transparent);
+  border-radius: 50%;
+  filter: blur(0.6px);
+}
+
+/* === 模拟视频噪点（示波器风格微噪点） === */
+.video-noise {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.012) 0 1px, transparent 1px 3px);
+  mix-blend-mode: overlay;
+  z-index: 1;
+}
+
+/* === Signature #1: 取景器四角 L 形角标 + 中心十字（全屏） === */
+.corner {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border-color: var(--brand-500);
+  border-style: solid;
+  border-width: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+.corner.tl { top: 24px;    left: 24px;    border-top-width: 2px; border-left-width: 2px; }
+.corner.tr { top: 24px;    right: 24px;   border-top-width: 2px; border-right-width: 2px; }
+.corner.bl { bottom: 24px; left: 24px;    border-bottom-width: 2px; border-left-width: 2px; }
+.corner.br { bottom: 24px; right: 24px;   border-bottom-width: 2px; border-right-width: 2px; }
+
+/* 中心十字 */
+.crosshair {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 48px; height: 48px;
+  z-index: 4;
+  mix-blend-mode: difference;
+  pointer-events: none;
+}
+.crosshair::before,
+.crosshair::after {
+  content: '';
+  position: absolute;
+  background: #ffffff;
+}
+.crosshair::before { top: 50%; left: 0; right: 0; height: 1px; transform: translateY(-50%); }
+.crosshair::after  { left: 50%; top: 0; bottom: 0; width: 1px; transform: translateX(-50%); }
+
+/* === Signature #1b: 角部小刻度 === */
+.tick {
+  position: absolute;
+  z-index: 4;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.12em;
+  opacity: 0.6;
+  pointer-events: none;
+}
+.tick.tl { top: 26px; left: 60px; }
+.tick.tr { top: 26px; right: 60px; }
+.tick.bl { bottom: 26px; left: 60px; }
+.tick.br { bottom: 26px; right: 60px; }
+
+/* === Signature #4: VAD 边缘光晕（speaking 时全屏视频四边朱砂红光晕 呼吸 1.2s） === */
+.vad-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  box-shadow:
+    inset 0 0 80px 12px var(--brand-glow),
+    inset 0 0 180px 20px rgba(200, 69, 60, 0.12);
+  animation: vad-breath 1.2s ease-in-out infinite;
+}
+@keyframes vad-breath {
+  0%, 100% { opacity: 0.6; }
+  50%      { opacity: 1; }
+}
+
+/* === 顶部浮动状态栏 === */
+.top-bar {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  right: 16px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: 10px 16px;
+  background: var(--float-bg);
+  -webkit-backdrop-filter: blur(var(--float-blur));
+  backdrop-filter: blur(var(--float-blur));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-float);
+}
+
+.top-bar-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+/* Logo — 朱砂红取景框 SVG */
+.logo-mark {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+.logo-mark svg { width: 100%; height: 100%; display: block; }
+
+/* === Signature #5: 通话计时器 ● 00:42 — JetBrains Mono + 红点呼吸 === */
+.call-timer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  letter-spacing: 0.08em;
+}
+.call-timer .dot {
+  width: 8px;
+  height: 8px;
+  background: var(--brand-500);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--brand-glow);
+  animation: pulse-dot 1.2s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.45; transform: scale(0.9); }
+}
+
+/* === Signature #6: AI 状态四态指示 IDLE/LISTENING/THINKING/SPEAKING === */
+.ai-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  border: 1px solid rgba(200, 69, 60, 0.4);
+  border-radius: var(--radius-pill);
+  background: rgba(200, 69, 60, 0.08);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  color: var(--brand-400);
+  text-transform: uppercase;
+}
+.ai-state::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--brand-500);
+  border-radius: 50%;
+  box-shadow: 0 0 6px var(--brand-glow);
+  animation: pulse-dot 1.2s ease-in-out infinite;
+}
+
+/* === Signature #2 (old): 数据读数条 — 与挂断按钮同栏 === */
+.readouts {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  padding-left: var(--space-4);
+  border-left: 1px solid rgba(255,255,255,0.08);
+  margin-left: var(--space-2);
+}
+.readout {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.readout .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.dot-ws   { background: var(--accent-success); box-shadow: 0 0 6px var(--accent-success); }
+.dot-vad  { background: var(--brand-500); box-shadow: 0 0 6px var(--brand-glow); animation: pulse-dot 1.2s ease-in-out infinite; }
+.dot-sr   { background: var(--scope-cyan); box-shadow: 0 0 6px rgba(94, 234, 212, 0.55); }
+.readout .key { color: var(--text-tertiary); }
+.readout .val { color: var(--text-secondary); }
+.readout .val.cyan  { color: var(--scope-cyan); }
+.readout .val.brand { color: var(--brand-400); }
+
+.top-bar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* 隐藏字幕按钮 */
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 14px;
+  transition: all var(--dur-fast) var(--ease-out-expo);
+  position: relative;
+}
+.btn-ghost:hover { background: rgba(255,255,255,0.12); color: var(--text-primary); }
+
+/* 💬 对话历史按钮 — 带未读小红点 */
+.btn-chat {
+  position: relative;
+}
+.btn-chat::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  background: var(--brand-500);
+  border-radius: 50%;
+  box-shadow: 0 0 6px var(--brand-glow), 0 0 0 2px var(--surface-0);
+  animation: pulse-dot 1.2s ease-in-out infinite;
+}
+
+/* === 挂断按钮 — 红色 X 圆形 === */
+.btn-hangup {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--brand-500);
+  border: 1px solid var(--brand-600);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 0 16px var(--brand-glow), 0 2px 8px rgba(0,0,0,0.4);
+  transition: all var(--dur-fast) var(--ease-out-expo);
+  flex-shrink: 0;
+}
+.btn-hangup:hover { background: var(--brand-400); transform: scale(1.05); }
+.btn-hangup svg { width: 16px; height: 16px; }
+
+/* ====================================================================
+   ★★★ Signature #8 (CORE): 用户语音识别字幕 — 浮动卡片双层 ★★★
+   上层：👂 你说: "你能看到我吗？"（ASR 灰色，speaking 时实时更新）
+   下层：🤖 AI: 是的，我能看到你。你戴着...▌（AI 流式回复 + 光标）
+   两层之间有 hairline 分隔线
+   整个浮动卡片半透明 + 模糊背景
+   ==================================================================== */
+.dialog-card {
+  position: absolute;
+  left: 50%;
+  bottom: 124px;
+  transform: translateX(-50%);
+  width: min(800px, calc(100vw - 32px));
+  z-index: 9;
+  background: var(--float-bg-strong);
+  -webkit-backdrop-filter: blur(var(--float-blur));
+  backdrop-filter: blur(var(--float-blur));
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-float);
+  overflow: hidden;
+}
+
+/* 顶部小标签条 — 标识当前对话 */
+.dialog-card .card-tag {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  background: rgba(0,0,0,0.25);
+}
+.dialog-card .card-tag .left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dialog-card .card-tag .left::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--scope-cyan);
+  border-radius: 50%;
+  box-shadow: 0 0 6px rgba(94, 234, 212, 0.6);
+}
+.dialog-card .card-tag .right {
+  display: flex;
+  gap: 16px;
+  color: var(--text-tertiary);
+}
+.dialog-card .card-tag .right b { color: var(--text-secondary); font-weight: 500; }
+
+/* === 上层 — ASR 用户语音识别 === */
+.asr-layer {
+  padding: 12px 16px 10px;
+  background: linear-gradient(180deg, rgba(94, 234, 212, 0.04) 0%, transparent 100%);
+}
+.asr-layer .label-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.asr-layer .label-row .role { color: var(--scope-cyan); }
+.asr-layer .label-row .live {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--brand-400);
+  margin-left: auto;
+}
+.asr-layer .label-row .live::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--brand-500);
+  border-radius: 50%;
+  animation: pulse-dot 1.2s ease-in-out infinite;
+}
+.asr-text {
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+.asr-text .quote { color: var(--text-tertiary); }
+.asr-text .utterance {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+.asr-text .caret-asr {
+  display: inline-block;
+  width: 2px;
+  height: 14px;
+  background: var(--scope-cyan);
+  vertical-align: text-bottom;
+  margin-left: 2px;
+  animation: cursor-breath 700ms var(--ease-out-expo) infinite;
+}
+
+/* === Hairline 分隔线 — 两层之间 === */
+.layer-divider {
+  height: 1px;
+  margin: 0 16px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12) 20%, rgba(255,255,255,0.12) 80%, transparent);
+}
+
+/* === 下层 — AI 流式回复 === */
+.ai-layer {
+  padding: 12px 16px 14px;
+  background: linear-gradient(180deg, transparent 0%, rgba(200, 69, 60, 0.04) 100%);
+}
+.ai-layer .label-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.ai-layer .label-row .role { color: var(--brand-400); }
+.ai-layer .label-row .stream-meta {
+  margin-left: auto;
+  color: var(--text-tertiary);
+}
+.ai-text {
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+/* === Signature #3 (old): 流式回复光标 — 朱砂红方块呼吸 === */
+.stream-cursor {
+  display: inline-block;
+  width: 9px;
+  height: 15px;
+  background: var(--brand-500);
+  vertical-align: text-bottom;
+  margin-left: 3px;
+  margin-bottom: 2px;
+  box-shadow: 0 0 8px var(--brand-glow);
+  animation: cursor-breath 800ms var(--ease-out-expo) infinite;
+}
+@keyframes cursor-breath {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.35; }
+}
+
+/* ====================================================================
+   ★★★ Signature #7 (NEW): 浮动控制条胶囊 ★★★
+   backdrop-filter: blur(20px) + background rgba(0,0,0,0.4) + 1px 朱砂红边框
+   border-radius: 9999px
+   5 按钮 (📹 🎤 🔇 📷 ⏹) — 挂断红
+   ==================================================================== */
+.control-pill {
+  position: absolute;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  z-index: 11;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.40);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--brand-500);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-pill), 0 0 24px rgba(200, 69, 60, 0.18);
+  max-width: calc(100vw - 32px);
+}
+
+.ctrl-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 18px;
+  transition: all var(--dur-fast) var(--ease-out-expo);
+  flex-shrink: 0;
+}
+.ctrl-btn:hover {
+  background: rgba(255,255,255,0.14);
+  color: var(--text-primary);
+  border-color: rgba(255,255,255,0.18);
+}
+.ctrl-btn.active {
+  background: rgba(94, 234, 212, 0.16);
+  border-color: var(--scope-cyan);
+  color: var(--scope-cyan);
+  box-shadow: 0 0 12px rgba(94, 234, 212, 0.3);
+}
+.ctrl-btn svg { width: 20px; height: 20px; }
+
+/* 录制中按钮 — 红色 */
+.ctrl-btn.rec {
+  background: rgba(200, 69, 60, 0.18);
+  border-color: var(--brand-500);
+  color: var(--brand-400);
+  position: relative;
+}
+.ctrl-btn.rec::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border: 1px solid var(--brand-500);
+  border-radius: 50%;
+  opacity: 0.5;
+  animation: rec-ring 1.2s ease-out infinite;
+}
+@keyframes rec-ring {
+  0%   { transform: scale(1);   opacity: 0.6; }
+  100% { transform: scale(1.3); opacity: 0; }
+}
+
+/* 挂断按钮（红、稍大、突出） */
+.ctrl-btn.hangup {
+  width: 56px;
+  height: 56px;
+  background: var(--brand-500);
+  border-color: var(--brand-600);
+  color: #fff;
+  box-shadow: 0 0 18px var(--brand-glow), 0 4px 12px rgba(0,0,0,0.4);
+}
+.ctrl-btn.hangup:hover { background: var(--brand-400); transform: scale(1.05); }
+.ctrl-btn.hangup svg { width: 22px; height: 22px; }
+
+/* 控制条分隔 */
+.ctrl-sep {
+  width: 1px;
+  height: 28px;
+  background: rgba(255,255,255,0.12);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+/* ====================================================================
+   响应式 — 3 断点
+   ==================================================================== */
+
+/* === sm-md (640-1023): 居中卡片 (max-width 600px) + 居中胶囊 === */
+@media (max-width: 1023px) {
+  .dialog-card {
+    width: min(600px, calc(100vw - 24px));
+    bottom: 116px;
+  }
+  .top-bar {
+    padding: 8px 12px;
+    gap: var(--space-2);
+  }
+  .readouts { gap: var(--space-3); font-size: 10px; }
+  .ai-state { font-size: 10px; padding: 3px 10px; }
+  .ctrl-btn { width: 44px; height: 44px; font-size: 16px; }
+  .ctrl-btn svg { width: 18px; height: 18px; }
+  .ctrl-btn.hangup { width: 50px; height: 50px; }
+  .corner { width: 22px; height: 22px; }
+  .tick { display: none; }
+}
+
+/* === xs (<640): 全宽卡片（双层合并为单行切换） + 全宽胶囊 + 5 按钮缩到 40×40 === */
+@media (max-width: 639px) {
+  .top-bar {
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    padding: 6px 8px;
+    gap: 6px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .top-bar::-webkit-scrollbar { display: none; }
+  .logo-mark { width: 18px; height: 18px; }
+  .call-timer { font-size: 11px; gap: 6px; }
+  .call-timer .dot { width: 6px; height: 6px; }
+  .ai-state { font-size: 9px; padding: 2px 8px; letter-spacing: 0.1em; }
+  .readouts { display: none; }  /* 移动端隐藏读数条，状态点合并到 ai-state */
+  .btn-ghost { width: 30px; height: 30px; font-size: 12px; }
+  .btn-hangup { width: 32px; height: 32px; }
+  .btn-hangup svg { width: 14px; height: 14px; }
+
+  /* 浮动卡片全宽，双层合并为紧凑双行 */
+  .dialog-card {
+    left: 8px;
+    right: 8px;
+    width: auto;
+    transform: none;
+    bottom: 104px;
+    border-radius: var(--radius-lg);
+  }
+  .dialog-card .card-tag { padding: 6px 12px; font-size: 9px; }
+  .dialog-card .card-tag .right { display: none; }
+  .asr-layer { padding: 8px 12px 6px; }
+  .ai-layer  { padding: 8px 12px 10px; }
+  .asr-text { font-size: 13px; }
+  .ai-text  { font-size: 14px; }
+
+  /* 全宽胶囊 + 5 按钮 40×40 (移动端) */
+  .control-pill {
+    left: 8px;
+    right: 8px;
+    transform: none;
+    bottom: 16px;
+    justify-content: space-around;
+    padding: 6px 8px;
+    max-width: none;
+  }
+  .ctrl-btn { width: 40px; height: 40px; font-size: 14px; }
+  .ctrl-btn svg { width: 16px; height: 16px; }
+  .ctrl-btn.hangup { width: 44px; height: 44px; }
+  .ctrl-sep { display: none; }
+
+  .corner { width: 18px; height: 18px; top: 16px; }
+  .corner.tl, .corner.tr { top: 76px; }  /* 避开顶部状态栏 */
+  .crosshair { width: 36px; height: 36px; }
+}
+
+/* 隐藏滚动条但保留滚动能力 */
+.stage::-webkit-scrollbar { display: none; }
+</style>
+</head>
+<body>
+
+<div class="stage">
+
+  <!-- ===== 模拟摄像头全屏画面 ===== -->
+  <div class="video-feed"></div>
+  <div class="video-noise"></div>
+
+  <!-- ===== Signature #4: VAD 边缘光晕 (speaking 时四边朱砂红光晕 呼吸 1.2s) ===== -->
+  <div class="vad-glow"></div>
+
+  <!-- ===== Signature #1: 取景器四角 L + 中心十字（全屏铺满） ===== -->
+  <div class="corner tl"></div>
+  <div class="corner tr"></div>
+  <div class="corner bl"></div>
+  <div class="corner br"></div>
+  <div class="crosshair"></div>
+
+  <!-- ===== 角部小刻度（旧 signature 风格） ===== -->
+  <span class="tick tl">+00.00</span>
+  <span class="tick tr">F2.8 · ISO 400</span>
+  <span class="tick bl">CH·01 / VISION</span>
+  <span class="tick br">30fps · q0.6</span>
+
+  <!-- =================================================================
+       顶部浮动状态栏 (含计时器 / AI 状态 / 读数条 / 对话按钮 / 挂断 X)
+       ================================================================= -->
+  <header class="top-bar">
+    <div class="top-bar-left">
+
+      <!-- Logo -->
+      <div class="logo-mark" aria-label="XEngineer logo">
+        <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="1" y="1" width="26" height="26" rx="3" stroke="#c8453c" stroke-width="1.2" opacity="0.7"/>
+          <path d="M1 6 L1 1 L6 1" stroke="#c8453c" stroke-width="1.8" fill="none"/>
+          <path d="M22 1 L27 1 L27 6" stroke="#c8453c" stroke-width="1.8" fill="none"/>
+          <path d="M27 22 L27 27 L22 27" stroke="#c8453c" stroke-width="1.8" fill="none"/>
+          <path d="M6 27 L1 27 L1 22" stroke="#c8453c" stroke-width="1.8" fill="none"/>
+          <line x1="14" y1="9"  x2="14" y2="19" stroke="#5eead4" stroke-width="1"/>
+          <line x1="9"  y1="14" x2="19" y2="14" stroke="#5eead4" stroke-width="1"/>
+          <circle cx="14" cy="14" r="1.6" fill="#c8453c"/>
+        </svg>
+      </div>
+
+      <!-- Signature #5: 通话计时器 ● 00:42 -->
+      <div class="call-timer">
+        <span class="dot"></span>
+        <span>00:42</span>
+      </div>
+
+      <!-- Signature #6: AI 状态四态 (此处显示 THINKING，演示当前态) -->
+      <div class="ai-state">THINKING</div>
+
+      <!-- Signature #2: 数据读数条 -->
+      <div class="readouts">
+        <div class="readout">
+          <span class="dot dot-ws"></span>
+          <span class="key">WS</span>
+          <span class="val">●</span>
+        </div>
+        <div class="readout">
+          <span class="dot dot-vad"></span>
+          <span class="key">VAD</span>
+          <span class="val brand">●</span>
+        </div>
+        <div class="readout">
+          <span class="dot dot-sr"></span>
+          <span class="key">SR</span>
+          <span class="val cyan">24kHz</span>
+        </div>
+        <div class="readout">
+          <span class="key">FW</span>
+          <span class="val">v0.1.0</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="top-bar-right">
+      <!-- 👁 隐藏字幕按钮（手动隐藏浮动卡片） -->
+      <button class="btn-ghost" type="button" title="隐藏字幕" aria-label="隐藏字幕">👁</button>
+      <!-- 💬 对话历史按钮（带未读小红点） -->
+      <button class="btn-ghost btn-chat" type="button" title="对话历史" aria-label="对话历史">💬</button>
+      <!-- 顶部挂断按钮（红色 X） -->
+      <button class="btn-hangup" type="button" title="挂断" aria-label="挂断">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+          <path d="M3 12 C 3 7 7 4 12 4 C 17 4 21 7 21 12 L 17.5 12 C 17 11 16 10.5 15 10.4 C 13 10.2 11 10.2 9 10.4 C 8 10.5 7 11 6.5 12 Z M 4 14 L 7 14 L 7.5 16 L 9.5 16 L 10 14 L 14 14 L 14.5 16 L 16.5 16 L 17 14 L 20 14 L 20 17 L 4 17 Z" fill="currentColor" stroke="none" opacity="0.95"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- =================================================================
+       ★★★ Signature #8 (CORE): 浮动双层卡片
+            上层 = 用户语音识别 (ASR)
+            下层 = AI 流式回复 (+光标)
+            hairline 分隔
+       ================================================================= -->
+  <section class="dialog-card" aria-label="浮动对话卡片">
+
+    <!-- 顶部小标签条 -->
+    <div class="card-tag">
+      <span class="left">CONVERSATION · STREAM DECODER</span>
+      <span class="right">
+        <span>MSG <b>04</b></span>
+        <span>LAT <b>42ms</b></span>
+      </span>
+    </div>
+
+    <!-- 上层 — 用户语音识别 (ASR) -->
+    <div class="asr-layer">
+      <div class="label-row">
+        <span>👂 你说</span>
+        <span class="role">/ ASR · LIVE</span>
+        <span class="live">LISTENING</span>
+      </div>
+      <p class="asr-text">
+        <span class="quote">"</span><span class="utterance">好的，那你能听到我说话吗？</span><span class="quote">"</span><span class="caret-asr"></span>
+      </p>
+    </div>
+
+    <!-- Hairline 分隔线 -->
+    <div class="layer-divider"></div>
+
+    <!-- 下层 — AI 流式回复 (+ 光标) -->
+    <div class="ai-layer">
+      <div class="label-row">
+        <span>🤖 AI</span>
+        <span class="role">/ STREAM · DECODING</span>
+        <span class="stream-meta">42 tok/s · 318ms</span>
+      </div>
+      <p class="ai-text">
+        能听到，你的声音很清晰。请问有什么我可以帮你的？<span class="stream-cursor"></span>
+      </p>
+    </div>
+  </section>
+
+  <!-- =================================================================
+       ★★★ Signature #7 (NEW): 底部浮动胶囊控制条
+            backdrop-filter blur(20px) + rgba(0,0,0,0.4) + 1px 朱砂红边框
+            5 按钮 (📹 🎤 🔇 📷 ⏹) — 挂断红
+       ================================================================= -->
+  <nav class="control-pill" aria-label="通话控制条">
+
+    <!-- 📹 摄像头 (active) -->
+    <button class="ctrl-btn active" type="button" title="摄像头" aria-label="摄像头">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M23 7l-7 5 7 5V7z"/>
+        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+      </svg>
+    </button>
+
+    <!-- 🎤 麦克风 (active) -->
+    <button class="ctrl-btn active" type="button" title="麦克风" aria-label="麦克风">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+        <line x1="12" y1="19" x2="12" y2="23"/>
+        <line x1="8" y1="23" x2="16" y2="23"/>
+      </svg>
+    </button>
+
+    <!-- 🔇 静音 -->
+    <button class="ctrl-btn" type="button" title="静音" aria-label="静音">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+        <line x1="23" y1="9" x2="17" y2="15"/>
+        <line x1="17" y1="9" x2="23" y2="15"/>
+      </svg>
+    </button>
+
+    <!-- 📷 拍照 -->
+    <button class="ctrl-btn" type="button" title="截图" aria-label="截图">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+        <circle cx="12" cy="13" r="4"/>
+      </svg>
+    </button>
+
+    <div class="ctrl-sep"></div>
+
+    <!-- ⏹ 挂断 (红，稍大) -->
+    <button class="ctrl-btn hangup" type="button" title="结束通话" aria-label="结束通话">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 12 C 3 7 7 4 12 4 C 17 4 21 7 21 12 L 17.5 12 C 17 11 16 10.5 15 10.4 C 13 10.2 11 10.2 9 10.4 C 8 10.5 7 11 6.5 12 Z"/>
+        <path d="M4 14 L 7 14 L 7.5 16 L 9.5 16 L 10 14 L 14 14 L 14.5 16 L 16.5 16 L 17 14 L 20 14 L 20 17 L 4 17 Z" fill="currentColor" stroke="none"/>
+      </svg>
+    </button>
+  </nav>
+
+</div>
+
+</body>
+</html>

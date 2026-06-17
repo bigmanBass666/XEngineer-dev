@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XEngineer — Laboratory Mockup (E)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   XEngineer Mockup E — Laboratory
+   Light theme. AI is the analyst; user is the specimen.
+   ============================================================ */
+
+:root {
+  /* Surface */
+  --medical-white: #fafbfc;
+  --lab-gray:      #eef0f2;
+  --lab-gray-2:    #e2e6ea;     /* slightly darker divider band */
+
+  /* Brand & accent */
+  --dissect-green:  #2d5f4e;
+  --dissect-green-soft: rgba(45, 95, 78, 0.08);
+  --alert-orange:   #d97706;
+  --data-blue:      #0ea5e9;
+  --data-blue-soft: rgba(14, 165, 233, 0.10);
+  --urgent-red:     #dc2626;
+
+  /* Text */
+  --label-gray:     #6b7280;
+  --text-primary:   #0f172a;
+  --text-secondary: #475569;
+
+  /* Border */
+  --border-lab:     #cbd5e1;
+  --border-hairline: 1px solid var(--border-lab);
+  --border-data:    1px solid var(--data-blue);
+  --border-green:   1px solid var(--dissect-green);
+
+  /* Radius — instrument panels prefer small radii */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
+
+  /* Type */
+  --font-display: 'Söhne', 'Inter', sans-serif;
+  --font-body:    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--medical-white);
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+}
+
+/* Subtle lab bench texture: faint dot grid so the white isn't sterile */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle, rgba(15, 23, 42, 0.04) 1px, transparent 1px);
+  background-size: 24px 24px;
+  z-index: 0;
+}
+
+.app {
+  position: relative;
+  z-index: 1;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ============================================================
+   HEADER (h-14 = 56px) — sample label + readouts
+   ============================================================ */
+.header {
+  height: 56px;
+  background: var(--medical-white);
+  border-bottom: var(--border-hairline);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  position: relative;
+}
+
+/* The dissect-green 2px underline that marks the "lab header" */
+.header::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    var(--dissect-green) 12%,
+    var(--dissect-green) 88%,
+    transparent 100%);
+  opacity: 0.6;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* Sample label: 72×24 lab tag */
+.sample-label {
+  width: 72px;
+  height: 24px;
+  background: var(--lab-gray);
+  border: var(--border-hairline);
+  border-radius: var(--radius-sm);
+  padding: 2px 6px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  position: relative;
+}
+/* Tiny corner notch — gives the tag a "perforated lab label" feel */
+.sample-label::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 4px;
+  width: 6px;
+  height: 4px;
+  background: var(--medical-white);
+  border-left: var(--border-hairline);
+  border-right: var(--border-hairline);
+}
+.sample-label .type {
+  font-family: var(--font-mono);
+  font-size: 7px;
+  color: var(--label-gray);
+  letter-spacing: 0.1em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+.sample-label .name {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+}
+
+.header-title {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.header-title .title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0.01em;
+}
+.header-title .subtitle {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--label-gray);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* Right side: instrument readouts */
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.readout {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border: var(--border-hairline);
+  border-radius: var(--radius-sm);
+  background: var(--medical-white);
+  letter-spacing: 0.04em;
+}
+.readout .label {
+  color: var(--label-gray);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.readout .value {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+.readout .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.dot-connected { background: var(--dissect-green); box-shadow: 0 0 0 2px rgba(45, 95, 78, 0.15); }
+.dot-silent    { background: var(--border-lab); }
+.dot-idle      { background: var(--data-blue); box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.15); }
+
+/* ============================================================
+   MAIN — two panes (desktop) / stacked (mobile)
+   ============================================================ */
+.main {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.left-pane {
+  width: 480px;
+  flex-shrink: 0;
+  border-right: var(--border-hairline);
+  padding: 18px 24px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--medical-white);
+  overflow-y: auto;
+}
+
+.left-pane-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--label-gray);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed var(--border-lab);
+  margin-bottom: 14px;
+}
+.left-pane-header .id {
+  color: var(--dissect-green);
+  font-weight: 500;
+}
+.left-pane-header .status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 7px;
+  background: var(--dissect-green-soft);
+  border: 1px solid var(--dissect-green);
+  border-radius: var(--radius-sm);
+  color: var(--dissect-green);
+  font-weight: 500;
+}
+.left-pane-header .status-pill::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  background: var(--dissect-green);
+  border-radius: 50%;
+  animation: pulse-rec 1.6s ease-in-out infinite;
+}
+
+/* ============================================================
+   MICROSCOPE — circular field of view + scale ring
+   ============================================================ */
+.scope-wrap {
+  position: relative;
+  width: 360px;
+  height: 360px;
+  margin: 4px 0 12px;
+}
+
+.scope-svg {
+  position: absolute;
+  inset: 0;
+  width: 360px;
+  height: 360px;
+  display: block;
+}
+
+/* The black circular field of view (280px diameter) */
+.scope-view {
+  position: absolute;
+  top: 40px;
+  left: 40px;
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 38%, #2a3038 0%, #11151a 55%, #050608 100%);
+  overflow: hidden;
+  box-shadow:
+    inset 0 0 40px rgba(0, 0, 0, 0.85),
+    inset 0 0 8px rgba(255, 255, 255, 0.04),
+    0 4px 12px rgba(15, 23, 42, 0.12);
+}
+
+/* Specimen silhouette inside the field of view */
+.specimen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 28px;
+  opacity: 0.85;
+}
+.specimen svg {
+  width: 200px;
+  height: 220px;
+}
+
+/* Crosshair */
+.crosshair {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.crosshair::before,
+.crosshair::after {
+  content: '';
+  position: absolute;
+  background: rgba(94, 234, 212, 0.45);
+}
+.crosshair::before {
+  /* horizontal */
+  top: 50%;
+  left: 30%;
+  right: 30%;
+  height: 1px;
+  box-shadow: 0 0 4px rgba(94, 234, 212, 0.6);
+}
+.crosshair::after {
+  /* vertical */
+  left: 50%;
+  top: 30%;
+  bottom: 30%;
+  width: 1px;
+  box-shadow: 0 0 4px rgba(94, 234, 212, 0.6);
+}
+.crosshair-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  background: rgba(94, 234, 212, 0.9);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 6px rgba(94, 234, 212, 0.7);
+}
+
+/* Focus indicator floating on top */
+.scope-coord {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: rgba(94, 234, 212, 0.7);
+  letter-spacing: 0.1em;
+  z-index: 2;
+}
+
+/* Magnification badge top-right of scope */
+.scope-mag {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: rgba(94, 234, 212, 0.85);
+  letter-spacing: 0.08em;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  z-index: 2;
+}
+
+/* Slow scan line sweep across the field of view */
+.scope-scan {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  pointer-events: none;
+}
+.scope-scan::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: linear-gradient(180deg,
+    transparent 0%,
+    rgba(94, 234, 212, 0.05) 40%,
+    rgba(94, 234, 212, 0.12) 50%,
+    rgba(94, 234, 212, 0.05) 60%,
+    transparent 100%);
+  animation: scan-sweep 4.5s linear infinite;
+}
+
+@keyframes scan-sweep {
+  0%   { top: -80px; }
+  100% { top: 280px; }
+}
+
+/* ============================================================
+   LEFT-PANE CONTROLS
+   ============================================================ */
+.controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-top: 6px;
+}
+
+.btn {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  border: var(--border-hairline);
+  background: var(--medical-white);
+  color: var(--text-primary);
+  cursor: pointer;
+  letter-spacing: 0.08em;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 150ms ease, color 150ms ease;
+  text-transform: uppercase;
+}
+
+.btn-rec {
+  background: var(--urgent-red);
+  color: #fff;
+  border-color: var(--urgent-red);
+}
+.btn-rec .rec-dot {
+  width: 8px;
+  height: 8px;
+  background: #fff;
+  border-radius: 50%;
+  animation: pulse-rec 1.2s ease-in-out infinite;
+}
+.btn-rec:hover { background: #b91c1c; }
+
+.btn-test {
+  background: var(--medical-white);
+  color: var(--dissect-green);
+  border-color: var(--dissect-green);
+}
+.btn-test:hover { background: var(--dissect-green-soft); }
+
+.btn-small {
+  font-size: 10px;
+  padding: 6px 10px;
+  letter-spacing: 0.06em;
+}
+
+@keyframes pulse-rec {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.4; transform: scale(0.85); }
+}
+
+/* VAD mini-meter below the controls */
+.meter-row {
+  width: 100%;
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.meter-label {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--label-gray);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.meter-label .value {
+  color: var(--dissect-green);
+  font-weight: 500;
+}
+.meter-bar {
+  height: 6px;
+  background: var(--lab-gray);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  position: relative;
+  border: var(--border-hairline);
+}
+.meter-fill {
+  height: 100%;
+  width: 22%;
+  background: linear-gradient(90deg, var(--dissect-green) 0%, var(--data-blue) 100%);
+  border-radius: var(--radius-sm);
+  animation: meter-pulse 2.4s ease-in-out infinite;
+}
+@keyframes meter-pulse {
+  0%, 100% { width: 18%; }
+  50%      { width: 32%; }
+}
+
+/* Sample metadata block — gives the left pane "lab notebook" feel */
+.meta-block {
+  width: 100%;
+  margin-top: 18px;
+  border: var(--border-hairline);
+  border-radius: var(--radius-md);
+  background: var(--lab-gray);
+  padding: 10px 12px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+.meta-block .meta-row {
+  display: flex;
+  justify-content: space-between;
+}
+.meta-block .meta-row .k {
+  color: var(--label-gray);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.meta-block .meta-row .v {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+/* ============================================================
+   RIGHT PANE — conversation log
+   ============================================================ */
+.right-pane {
+  flex: 1;
+  min-width: 0;
+  padding: 18px 24px 20px;
+  overflow-y: auto;
+  background: var(--medical-white);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.right-pane-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed var(--border-lab);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--label-gray);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.right-pane-header .left {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+.right-pane-header .left .accent {
+  color: var(--dissect-green);
+  font-weight: 500;
+}
+
+/* USER message — right aligned, dissect-green border */
+.msg-user {
+  align-self: flex-end;
+  max-width: 70%;
+  background: var(--dissect-green-soft);
+  border: var(--border-green);
+  border-left-width: 3px;
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  position: relative;
+}
+.msg-user .role {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--dissect-green);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+.msg-user .body {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+/* SYS message — centered, alert-orange accent */
+.msg-sys {
+  align-self: center;
+  max-width: 80%;
+  background: var(--lab-gray);
+  border: var(--border-hairline);
+  border-left: 3px solid var(--alert-orange);
+  border-radius: var(--radius-md);
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.msg-sys .role {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--alert-orange);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.msg-sys .body {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* AI message — three-section lab report */
+.msg-ai {
+  align-self: flex-start;
+  max-width: 86%;
+  border: var(--border-hairline);
+  border-radius: var(--radius-md);
+  background: var(--medical-white);
+  overflow: hidden;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.03);
+}
+.msg-ai .report-head {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--label-gray);
+  letter-spacing: 0.06em;
+  padding: 6px 12px;
+  background: var(--lab-gray);
+  border-bottom: var(--border-hairline);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-transform: uppercase;
+}
+.msg-ai .report-head .sample-id {
+  color: var(--dissect-green);
+  font-weight: 500;
+}
+.msg-ai .report-head .meta {
+  color: var(--label-gray);
+}
+.msg-ai .report-head .meta .sep {
+  color: var(--border-lab);
+  margin: 0 4px;
+}
+.msg-ai .report-head .meta .data {
+  color: var(--data-blue);
+  font-weight: 500;
+}
+.msg-ai .report-body {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.6;
+  padding: 12px 14px;
+}
+.msg-ai .report-body .cursor {
+  display: inline-block;
+  width: 8px;
+  height: 14px;
+  background: var(--dissect-green);
+  vertical-align: text-bottom;
+  margin-left: 2px;
+  animation: blink-cursor 1s steps(2) infinite;
+}
+@keyframes blink-cursor {
+  0%, 50%   { opacity: 1; }
+  50.01%, 100% { opacity: 0; }
+}
+.msg-ai .report-foot {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--label-gray);
+  letter-spacing: 0.06em;
+  padding: 6px 12px;
+  background: var(--lab-gray);
+  border-top: var(--border-hairline);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.msg-ai .report-foot .analyst {
+  color: var(--text-secondary);
+}
+.msg-ai .report-foot .analyst .who {
+  color: var(--dissect-green);
+  font-weight: 500;
+}
+.msg-ai .report-foot .timestamp {
+  color: var(--label-gray);
+}
+.msg-ai .report-foot .badge {
+  font-size: 9px;
+  padding: 1px 5px;
+  background: var(--data-blue-soft);
+  color: var(--data-blue);
+  border: 1px solid var(--data-blue);
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+/* Section divider — for "specimen log" feel */
+.divider {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--label-gray);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-lab);
+}
+
+/* ============================================================
+   STATUSBAR — tabulated lab log
+   ============================================================ */
+.statusbar {
+  background: var(--medical-white);
+  border-top: var(--border-hairline);
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.statusbar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 16px;
+  background: var(--lab-gray);
+  border-bottom: var(--border-hairline);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--label-gray);
+}
+.statusbar-header .left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.statusbar-header .pulse {
+  width: 6px;
+  height: 6px;
+  background: var(--dissect-green);
+  border-radius: 50%;
+  animation: pulse-rec 1.8s ease-in-out infinite;
+}
+.statusbar-header .right {
+  color: var(--dissect-green);
+  font-weight: 500;
+}
+
+/* 5-column table */
+.log-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.log-table th,
+.log-table td {
+  padding: 0 16px;
+  height: 24px;
+  line-height: 24px;
+  text-align: left;
+  vertical-align: middle;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.log-table thead th {
+  background: var(--medical-white);
+  border-bottom: 1px solid var(--border-lab);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--label-gray);
+  font-weight: 500;
+  height: 22px;
+}
+.log-table tbody tr {
+  border-bottom: 1px dotted var(--border-lab);
+}
+.log-table tbody tr:last-child {
+  border-bottom: none;
+}
+.log-table tbody tr:nth-child(even) {
+  background: rgba(238, 240, 242, 0.5);
+}
+.log-table td.no    { color: var(--label-gray); width: 56px; }
+.log-table td.time  { color: var(--text-secondary); width: 96px; }
+.log-table td.item  { color: var(--text-primary); width: 28%; }
+.log-table td.value { color: var(--text-primary); font-weight: 500; }
+.log-table td.unit  { color: var(--label-gray); width: 60px; }
+
+/* Value states */
+.val-ok    { color: var(--dissect-green) !important; }
+.val-warn  { color: var(--alert-orange) !important; }
+.val-data  { color: var(--data-blue) !important; }
+.val-err   { color: var(--urgent-red) !important; }
+
+/* ============================================================
+   RESPONSIVE — mobile (≤ 768px) stacks vertically
+   ============================================================ */
+@media (max-width: 768px) {
+  body { overflow: auto; }
+  .app { height: auto; min-height: 100vh; }
+  .main { flex-direction: column; }
+  .left-pane {
+    width: 100%;
+    border-right: none;
+    border-bottom: var(--border-hairline);
+    padding: 16px;
+  }
+  .right-pane {
+    padding: 14px 16px;
+    min-height: 360px;
+  }
+  .scope-wrap {
+    width: 280px;
+    height: 280px;
+    transform: scale(0.78);
+    transform-origin: top center;
+    margin-bottom: -50px;
+  }
+  .header { padding: 0 12px; }
+  .header-right .readout { padding: 3px 6px; font-size: 10px; }
+  .header-right .readout .label { display: none; }
+  .header-title .title { font-size: 12px; }
+  .header-title .subtitle { font-size: 8px; }
+  .log-table th, .log-table td { padding: 0 8px; }
+  .log-table td.time { width: 70px; }
+  .log-table td.item { width: auto; }
+}
+
+/* Scrollbar polish */
+.right-pane::-webkit-scrollbar,
+.left-pane::-webkit-scrollbar { width: 6px; }
+.right-pane::-webkit-scrollbar-thumb,
+.left-pane::-webkit-scrollbar-thumb {
+  background: var(--border-lab);
+  border-radius: 3px;
+}
+.right-pane::-webkit-scrollbar-track,
+.left-pane::-webkit-scrollbar-track {
+  background: transparent;
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ==================== HEADER ==================== -->
+  <header class="header">
+    <div class="header-left">
+      <div class="sample-label">
+        <div class="type">SAMPLE TYPE</div>
+        <div class="name">XEngineer</div>
+      </div>
+      <div class="header-title">
+        <div class="title">AI Vision Conversation Assistant</div>
+        <div class="subtitle">LABORATORY · ANALYST MODE · BUILD 0.1.0</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="readout">
+        <span class="dot dot-connected"></span>
+        <span class="label">WS</span>
+        <span class="value">CONNECTED</span>
+      </div>
+      <div class="readout">
+        <span class="dot dot-silent"></span>
+        <span class="label">VAD</span>
+        <span class="value">SILENT</span>
+      </div>
+      <div class="readout">
+        <span class="dot dot-idle"></span>
+        <span class="label">AI</span>
+        <span class="value">IDLE</span>
+      </div>
+      <div class="readout">
+        <span class="label">SR</span>
+        <span class="value">24 kHz</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== MAIN ==================== -->
+  <div class="main">
+
+    <!-- ============ LEFT PANE — microscope + controls ============ -->
+    <aside class="left-pane">
+
+      <div class="left-pane-header">
+        <span><span class="id">SPEC-01</span> · VISUAL CAPTURE UNIT</span>
+        <span class="status-pill">LIVE FEED</span>
+      </div>
+
+      <!-- Microscope scope -->
+      <div class="scope-wrap">
+        <!-- Scale ring with tick marks (SVG).
+             270° arc with gap at bottom (6 o'clock area).
+             Label 0 at SW (7:30), label 270 at SE (4:30), going CCW through W, N, E.
+             All coordinates computed via: math_angle = 225 - label; x = cx + r·cos(a); y = cy - r·sin(a) -->
+        <svg class="scope-svg" viewBox="0 0 360 360" xmlns="http://www.w3.org/2000/svg">
+          <!-- Outer white ring background -->
+          <circle cx="180" cy="180" r="178" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+          <!-- Inner reference circle (dotted) -->
+          <circle cx="180" cy="180" r="140" fill="none" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="2 3" opacity="0.5"/>
+          <!-- Dissect-green accent arc over the top half (label 60 → label 210) -->
+          <path d="M 8.07 133.93 A 178 178 0 0 1 351.93 133.93"
+                fill="none" stroke="#2d5f4e" stroke-width="2" opacity="0.55"/>
+          <!-- Bottom gap accent (subtle) -->
+          <path d="M 54.13 305.87 A 178 178 0 0 0 305.87 305.87"
+                fill="none" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3 4" opacity="0.7"/>
+
+          <!-- Minor ticks every 10° (28 ticks; major positions skipped) -->
+          <g stroke="#475569" stroke-width="1">
+            <line x1="34.19" y1="282.10" x2="39.93" y2="278.08"/>
+            <line x1="18.68" y1="255.23" x2="25.02" y2="252.27"/>
+            <line x1="2.68" y1="195.51" x2="9.65" y2="194.90"/>
+            <line x1="2.68" y1="164.49" x2="9.65" y2="165.10"/>
+            <line x1="18.68" y1="104.77" x2="25.02" y2="107.73"/>
+            <line x1="34.19" y1="77.90" x2="39.93" y2="81.92"/>
+            <line x1="77.90" y1="34.19" x2="81.92" y2="39.93"/>
+            <line x1="104.77" y1="18.68" x2="107.73" y2="25.02"/>
+            <line x1="164.49" y1="2.68" x2="165.10" y2="9.65"/>
+            <line x1="195.51" y1="2.68" x2="194.90" y2="9.65"/>
+            <line x1="255.23" y1="18.68" x2="252.27" y2="25.02"/>
+            <line x1="282.10" y1="34.19" x2="278.08" y2="39.93"/>
+            <line x1="325.81" y1="77.90" x2="320.07" y2="81.92"/>
+            <line x1="341.32" y1="104.77" x2="334.98" y2="107.73"/>
+            <line x1="357.32" y1="164.49" x2="350.35" y2="165.10"/>
+            <line x1="357.32" y1="195.51" x2="350.35" y2="194.90"/>
+            <line x1="341.32" y1="255.23" x2="334.98" y2="252.27"/>
+            <line x1="325.81" y1="282.10" x2="320.07" y2="278.08"/>
+          </g>
+
+          <!-- Major ticks every 30° (10 ticks at 0, 30, 60, ..., 270) -->
+          <g stroke="#0f172a" stroke-width="1.5">
+            <line x1="54.13" y1="305.87" x2="64.74" y2="295.26"/>
+            <line x1="8.07" y1="226.07" x2="22.55" y2="222.19"/>
+            <line x1="8.07" y1="133.93" x2="22.55" y2="137.81"/>
+            <line x1="54.13" y1="54.13" x2="64.74" y2="64.74"/>
+            <line x1="133.93" y1="8.07" x2="137.81" y2="22.55"/>
+            <line x1="226.07" y1="8.07" x2="222.19" y2="22.55"/>
+            <line x1="305.87" y1="54.13" x2="295.26" y2="64.74"/>
+            <line x1="351.93" y1="133.93" x2="337.45" y2="137.81"/>
+            <line x1="351.93" y1="226.07" x2="337.45" y2="222.19"/>
+            <line x1="305.87" y1="305.87" x2="295.26" y2="295.26"/>
+          </g>
+
+          <!-- Numbers at major ticks: 0, 30, 60, ..., 270 -->
+          <g font-family="JetBrains Mono, monospace" font-size="11" font-weight="500" fill="#0f172a" text-anchor="middle">
+            <text x="73.93" y="289.57">0</text>
+            <text x="35.11" y="222.32">30</text>
+            <text x="35.11" y="144.68">60</text>
+            <text x="73.93" y="77.43">90</text>
+            <text x="141.18" y="38.61">120</text>
+            <text x="218.82" y="38.61">150</text>
+            <text x="286.07" y="77.43">180</text>
+            <text x="324.89" y="144.68">210</text>
+            <text x="324.89" y="222.32">240</text>
+            <text x="286.07" y="289.57">270</text>
+          </g>
+
+          <!-- UNIT label & objective badge -->
+          <text x="180" y="346" font-family="JetBrains Mono, monospace"
+                font-size="9" fill="#6b7280" text-anchor="middle"
+                letter-spacing="2">DEG · ROTARY STAGE</text>
+          <text x="180" y="22" font-family="JetBrains Mono, monospace"
+                font-size="9" fill="#2d5f4e" text-anchor="middle"
+                letter-spacing="2">OBJ ×40</text>
+        </svg>
+
+        <!-- The actual circular field of view -->
+        <div class="scope-view">
+          <div class="scope-mag">×40 / NA 0.65</div>
+
+          <!-- Specimen silhouette -->
+          <div class="specimen">
+            <svg viewBox="0 0 200 220" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <radialGradient id="headG" cx="50%" cy="40%" r="60%">
+                  <stop offset="0%" stop-color="#5eead4" stop-opacity="0.85"/>
+                  <stop offset="100%" stop-color="#0f766e" stop-opacity="0.25"/>
+                </radialGradient>
+              </defs>
+              <!-- Shoulders -->
+              <path d="M 30 220 Q 30 165 75 150 L 125 150 Q 170 165 170 220 Z"
+                    fill="url(#headG)" opacity="0.75"/>
+              <!-- Head -->
+              <ellipse cx="100" cy="105" rx="42" ry="50" fill="url(#headG)" opacity="0.85"/>
+              <!-- Glasses (hint) -->
+              <circle cx="86" cy="100" r="11" fill="none" stroke="#5eead4" stroke-width="1.5" opacity="0.7"/>
+              <circle cx="114" cy="100" r="11" fill="none" stroke="#5eead4" stroke-width="1.5" opacity="0.7"/>
+              <line x1="97" y1="100" x2="103" y2="100" stroke="#5eead4" stroke-width="1.5" opacity="0.7"/>
+            </svg>
+          </div>
+
+          <!-- Crosshair overlay -->
+          <div class="crosshair">
+            <div class="crosshair-dot"></div>
+          </div>
+
+          <!-- Scan sweep animation -->
+          <div class="scope-scan"></div>
+
+          <!-- Coord readout inside view -->
+          <div class="scope-coord">X 512 Y 384 · Z 1.20m</div>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div class="controls">
+        <button class="btn btn-rec"><span class="rec-dot"></span>REC</button>
+        <button class="btn btn-test btn-small">SEND TEST</button>
+        <button class="btn btn-small">CALIBRATE</button>
+      </div>
+
+      <!-- VAD meter -->
+      <div class="meter-row">
+        <div class="meter-label">
+          <span>AUDIO INPUT · RMS</span>
+          <span class="value">0.022</span>
+        </div>
+        <div class="meter-bar">
+          <div class="meter-fill"></div>
+        </div>
+      </div>
+
+      <!-- Sample metadata block — lab notebook vibe -->
+      <div class="meta-block">
+        <div class="meta-row"><span class="k">Specimen ID</span><span class="v">SPC-2026-06-17-001</span></div>
+        <div class="meta-row"><span class="k">Capture Rate</span><span class="v">15 fps</span></div>
+        <div class="meta-row"><span class="k">Resolution</span><span class="v">640 × 480</span></div>
+        <div class="meta-row"><span class="k">Encoder</span><span class="v">JPEG q=0.6</span></div>
+        <div class="meta-row"><span class="k">Last Frame</span><span class="v">14:23:07.412</span></div>
+        <div class="meta-row"><span class="k">Analyst</span><span class="v">XEngineer-AI</span></div>
+      </div>
+
+    </aside>
+
+    <!-- ============ RIGHT PANE — conversation log ============ -->
+    <section class="right-pane">
+
+      <div class="right-pane-header">
+        <div class="left">
+          <span class="accent">LAB LOG</span>
+          <span>SESSION 2026-06-17 / 14:23:00</span>
+        </div>
+        <div>ROUND 02 · 4 ENTRIES</div>
+      </div>
+
+      <!-- USER message 1 -->
+      <div class="msg-user">
+        <div class="role">USER · INQUIRY #001</div>
+        <div class="body">你好，你能看到我吗？</div>
+      </div>
+
+      <!-- AI lab report -->
+      <div class="msg-ai">
+        <div class="report-head">
+          <span class="sample-id">SAMPLE #001</span>
+          <span class="meta">
+            INPUT <span class="data">VISUAL+AUDIO</span>
+            <span class="sep">│</span>
+            OUTPUT <span class="data">TEXT</span>
+            <span class="sep">│</span>
+            CONF 0.92
+          </span>
+        </div>
+        <div class="report-body">
+          是的，我能看到你。你戴着一副金属半框眼镜，身穿深蓝色 T 恤，背景为白色墙面并有一盏台灯。面部朝向正前方，预估距离镜头约 1.2 米。请继续说明你需要分析的内容<span class="cursor"></span>
+        </div>
+        <div class="report-foot">
+          <span class="analyst">ANALYST <span class="who">XEngineer-AI</span></span>
+          <span class="badge">VERIFIED</span>
+          <span class="timestamp">14:23:08 · LAT 142ms</span>
+        </div>
+      </div>
+
+      <!-- Divider -->
+      <div class="divider">— ANALYST NOTE —</div>
+
+      <!-- SYS message -->
+      <div class="msg-sys">
+        <span class="role">SYS</span>
+        <span class="body">摄像头已开启 · 视觉通道接入完成 · 帧率稳定 15 fps</span>
+      </div>
+
+      <!-- USER message 2 -->
+      <div class="msg-user">
+        <div class="role">USER · INQUIRY #002</div>
+        <div class="body">好的，那你能听到我说话吗？</div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <!-- ==================== STATUSBAR — tabulated lab log ==================== -->
+  <footer class="statusbar">
+    <div class="statusbar-header">
+      <div class="left">
+        <span class="pulse"></span>
+        <span>INSTRUMENT LOG · LIVE TELEMETRY</span>
+      </div>
+      <div class="right">SAMPLING 1 Hz · 6 / 6 CHANNELS NOMINAL</div>
+    </div>
+    <table class="log-table">
+      <thead>
+        <tr>
+          <th class="no">No.</th>
+          <th class="time">Time</th>
+          <th class="item">Item</th>
+          <th class="value">Value</th>
+          <th class="unit">Unit</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="no">001</td>
+          <td class="time">14:23:05</td>
+          <td class="item">WS Connection</td>
+          <td class="value val-ok">CONNECTED</td>
+          <td class="unit">—</td>
+        </tr>
+        <tr>
+          <td class="no">002</td>
+          <td class="time">14:23:05</td>
+          <td class="item">VAD State</td>
+          <td class="value">SILENT</td>
+          <td class="unit">—</td>
+        </tr>
+        <tr>
+          <td class="no">003</td>
+          <td class="time">14:23:05</td>
+          <td class="item">Audio Rate</td>
+          <td class="value val-data">24000</td>
+          <td class="unit">Hz</td>
+        </tr>
+        <tr>
+          <td class="no">004</td>
+          <td class="time">14:23:06</td>
+          <td class="item">Frame Rate</td>
+          <td class="value val-data">15.0</td>
+          <td class="unit">fps</td>
+        </tr>
+        <tr>
+          <td class="no">005</td>
+          <td class="time">14:23:07</td>
+          <td class="item">LLM Latency</td>
+          <td class="value val-warn">142</td>
+          <td class="unit">ms</td>
+        </tr>
+        <tr>
+          <td class="no">006</td>
+          <td class="time">14:23:08</td>
+          <td class="item">Session ID</td>
+          <td class="value">a8f2c9e1</td>
+          <td class="unit">—</td>
+        </tr>
+      </tbody>
+    </table>
+  </footer>
+
+</div>
+</body>
+</html>

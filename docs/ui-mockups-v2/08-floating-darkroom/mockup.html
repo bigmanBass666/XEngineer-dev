@@ -1,0 +1,1352 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>XEngineer · 浮动全功能 × 暗房 · Mockup M14</title>
+
+  <!-- Google Fonts: Cormorant Garamond + Inter + IBM Plex Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+    /* ========================================================== */
+    /*  M14 · 浮动全功能 × 暗房 — Design Tokens                   */
+    /* ========================================================== */
+    :root {
+      /* Colors — darkroom palette */
+      --safelight: #7a1f1f;            /* 安全灯红 — 深酒红 */
+      --safelight-dim: #5a1818;
+      --dev-black: #0d0a0a;            /* 显影黑，暖色偏移 */
+      --dev-black-2: #15110f;
+      --paper: #f4ead5;                /* 相纸米白 */
+      --paper-soft: rgba(244, 234, 213, 0.85);
+      --paper-dim: rgba(244, 234, 213, 0.55);
+      --silver: #8a8478;               /* 银盐灰 */
+      --silver-dim: rgba(138, 132, 120, 0.45);
+      --developer: #3a2418;            /* 显影液深棕 */
+      --developer-soft: rgba(58, 36, 24, 0.55);
+      --red-glow: rgba(122, 31, 31, 0.25);
+      --velvet: #5c1f1f;               /* 天鹅绒红 — 挂断按钮 */
+      --brass: #b08d57;                /* 黄铜 — 胶囊边框 */
+      --brass-dim: rgba(176, 141, 87, 0.45);
+
+      /* Typography */
+      --font-display: 'Cormorant Garamond', 'Times New Roman', serif;
+      --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+
+      /* Radius */
+      --radius-sm: 2px;
+      --radius-md: 6px;
+      --radius-lg: 12px;
+      --radius-pill: 999px;
+
+      /* Borders */
+      --border-hairline: 1px solid rgba(244, 234, 213, 0.10);
+      --border-brass: 1px solid var(--brass-dim);
+
+      /* Spacing */
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-6: 24px;
+      --space-8: 32px;
+
+      /* Easing */
+      --ease-develop: cubic-bezier(0.4, 0, 0.2, 1);
+      --ease-breathe: cubic-bezier(0.45, 0, 0.55, 1);
+    }
+
+    /* ========================================================== */
+    /*  Base                                                      */
+    /* ========================================================== */
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background-color: var(--dev-black);
+      color: var(--paper);
+      font-family: var(--font-body);
+      font-size: 14px;
+      line-height: 1.5;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* ========================================================== */
+    /*  Stage 0 — Full-screen video background                    */
+    /* ========================================================== */
+    .video-stage {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      background:
+        radial-gradient(ellipse at 50% 45%, rgba(58, 36, 24, 0.55) 0%, var(--dev-black) 70%),
+        linear-gradient(135deg, #1a1310 0%, #0d0a0a 60%, #15110f 100%);
+    }
+
+    /* Simulated camera subject — a soft portrait silhouette in the darkroom */
+    .video-portrait {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -48%);
+      width: 62%;
+      max-width: 720px;
+      aspect-ratio: 3 / 4;
+      opacity: 0.78;
+      filter: blur(0.6px) contrast(1.05) sepia(0.15);
+    }
+    .silhouette-head {
+      position: absolute;
+      top: 4%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 130px;
+      height: 158px;
+      border-radius: 50% 50% 48% 48%;
+      background: radial-gradient(circle at 50% 38%, rgba(244, 234, 213, 0.42) 0%, rgba(138, 132, 120, 0.22) 52%, transparent 82%);
+      filter: blur(2px);
+    }
+    .silhouette-body {
+      position: absolute;
+      top: 36%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 260px;
+      height: 220px;
+      border-radius: 50% 50% 6% 6% / 58% 58% 6% 6%;
+      background: radial-gradient(ellipse at 50% 28%, rgba(58, 36, 24, 0.9) 0%, rgba(13, 10, 10, 0.6) 70%, transparent 100%);
+      filter: blur(3px);
+    }
+    /* Faint glasses hint on the silhouette */
+    .silhouette-glasses {
+      position: absolute;
+      top: 20%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 92px;
+      height: 18px;
+      border-top: 1px solid rgba(244, 234, 213, 0.5);
+      border-radius: 50% 50% 0 0;
+      box-shadow: 0 -1px 0 rgba(244, 234, 213, 0.18);
+      filter: blur(0.6px);
+    }
+    /* Wall + framed picture behind subject */
+    .wall-frame {
+      position: absolute;
+      top: 14%;
+      right: 16%;
+      width: 96px;
+      height: 128px;
+      border: 1px solid rgba(176, 141, 87, 0.35);
+      background: linear-gradient(160deg, rgba(58, 36, 24, 0.5), rgba(26, 19, 16, 0.3));
+      filter: blur(1.2px);
+      opacity: 0.55;
+    }
+    .wall-frame::after {
+      content: "";
+      position: absolute;
+      inset: 8px;
+      background: linear-gradient(180deg, rgba(122, 31, 31, 0.18), rgba(58, 36, 24, 0.25));
+    }
+
+    /* ---- Signature OLD #1 — Red ambient safelight glow (top-left radial) ---- */
+    .ambient-glow {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 12% 16%, var(--red-glow), transparent 48%),
+        radial-gradient(circle at 88% 92%, rgba(58, 36, 24, 0.35), transparent 45%);
+      mix-blend-mode: screen;
+      z-index: 2;
+    }
+
+    /* Paper grain overlay — adds tactility */
+    .grain {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.045;
+      background-image:
+        repeating-linear-gradient(0deg, transparent 0 2px, rgba(244, 234, 213, 1) 2px 3px),
+        repeating-linear-gradient(90deg, transparent 0 2px, rgba(244, 234, 213, 1) 2px 3px);
+      mix-blend-mode: overlay;
+      z-index: 3;
+    }
+
+    /* ---- Signature OLD #2 — Film perforations (8 holes × 2 sides) ---- */
+    .film-perfs {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 22px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-evenly;
+      align-items: center;
+      padding: 24px 0;
+      z-index: 4;
+      pointer-events: none;
+    }
+    .film-perfs.left { left: 0; }
+    .film-perfs.right { right: 0; }
+    .film-hole {
+      width: 8px;
+      height: 10px;
+      background: var(--silver);
+      opacity: 0.28;
+      border-radius: 1.5px;
+      box-shadow: inset 0 0 2px rgba(13, 10, 10, 0.8);
+    }
+
+    /* ---- Signature NEW #1 — VAD edge glow (speaking state, 4 edges safelight red) ---- */
+    .vad-edge {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 5;
+      box-shadow:
+        inset 0 0 60px 8px rgba(122, 31, 31, 0.35),
+        inset 0 0 140px 0 rgba(122, 31, 31, 0.18);
+      animation: vad-pulse 1.6s var(--ease-breathe) infinite;
+    }
+    @keyframes vad-pulse {
+      0%, 100% { opacity: 0.45; }
+      50%      { opacity: 0.9; }
+    }
+
+    /* Corner registration marks — photographic composition guides */
+    .reg-mark {
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      border-color: var(--paper-soft);
+      opacity: 0.55;
+      pointer-events: none;
+      z-index: 6;
+    }
+    .reg-mark.tl { top: 14px; left: 36px; border-top: 1px solid; border-left: 1px solid; }
+    .reg-mark.tr { top: 14px; right: 36px; border-top: 1px solid; border-right: 1px solid; }
+    .reg-mark.bl { bottom: 14px; left: 36px; border-bottom: 1px solid; border-left: 1px solid; }
+    .reg-mark.br { bottom: 14px; right: 36px; border-bottom: 1px solid; border-right: 1px solid; }
+
+    /* REC indicator floating on video (top-right) */
+    .rec-badge {
+      position: absolute;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 7;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      color: var(--paper-dim);
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+    .rec-badge .rec-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--safelight);
+      box-shadow: 0 0 8px var(--safelight);
+      animation: dot-breathe 1.8s var(--ease-breathe) infinite;
+    }
+
+    /* ========================================================== */
+    /*  Stage 1 — Top floating status bar                         */
+    /* ========================================================== */
+    .top-bar {
+      position: fixed;
+      top: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: var(--space-6);
+      padding: 10px 18px 10px 16px;
+      min-width: 0;
+      background: rgba(13, 10, 10, 0.55);
+      backdrop-filter: blur(20px) saturate(1.1);
+      -webkit-backdrop-filter: blur(20px) saturate(1.1);
+      border: var(--border-hairline);
+      border-radius: var(--radius-pill);
+      box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(244, 234, 213, 0.06);
+    }
+    /* Faint safelight underglow on the pill */
+    .top-bar::after {
+      content: "";
+      position: absolute;
+      left: 20%;
+      right: 20%;
+      bottom: -1px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--safelight), transparent);
+      opacity: 0.6;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-right: var(--space-4);
+      border-right: var(--border-hairline);
+    }
+    .logo-mark {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      position: relative;
+      background: radial-gradient(circle, var(--safelight) 0%, var(--safelight-dim) 60%, transparent 100%);
+      box-shadow: 0 0 12px var(--red-glow), inset 0 0 6px rgba(13, 10, 10, 0.6);
+      flex-shrink: 0;
+    }
+    .logo-mark::after {
+      content: "";
+      position: absolute;
+      inset: 6px;
+      border-radius: 50%;
+      border: 1px solid rgba(244, 234, 213, 0.6);
+      background: var(--dev-black);
+    }
+    .logo-mark::before {
+      content: "";
+      position: absolute;
+      inset: 11px;
+      border-radius: 50%;
+      background: var(--paper);
+      opacity: 0.8;
+      animation: safelight-breathe 4s var(--ease-breathe) infinite;
+    }
+    @keyframes safelight-breathe {
+      0%, 100% { opacity: 0.5; transform: scale(0.9); }
+      50%      { opacity: 1;   transform: scale(1.05); }
+    }
+    .brand-text {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.1;
+    }
+    .brand-name {
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: 18px;
+      letter-spacing: 0.04em;
+      color: var(--paper);
+    }
+    .brand-sub {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--silver);
+      margin-top: 1px;
+    }
+
+    /* ---- Signature NEW #2 — Call timer `● DEV 00:42` IBM Plex Mono + red dot breathing ---- */
+    .dev-timer {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      color: var(--paper-soft);
+      padding: 4px 10px;
+      border: 1px solid rgba(122, 31, 31, 0.4);
+      border-radius: var(--radius-pill);
+      background: rgba(122, 31, 31, 0.08);
+    }
+    .dev-timer .live-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--safelight);
+      box-shadow: 0 0 8px var(--safelight);
+      animation: dot-breathe 2.4s var(--ease-breathe) infinite;
+    }
+    @keyframes dot-breathe {
+      0%, 100% { opacity: 0.55; transform: scale(1); }
+      50%      { opacity: 1;    transform: scale(1.15); }
+    }
+    .dev-timer .dev-label { color: var(--silver); }
+    .dev-timer .dev-clock { color: var(--paper); }
+
+    /* ---- Signature OLD #4 — "显影时间" progress (DEV 12s) ---- */
+    .dev-progress {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--silver);
+      letter-spacing: 0.08em;
+    }
+    .dev-progress .dev-prog-label { color: var(--silver-dim); }
+    .dev-progress .dev-prog-value { color: var(--brass); }
+    .dev-progress .dev-prog-bar {
+      width: 56px;
+      height: 3px;
+      background: rgba(244, 234, 213, 0.08);
+      border-radius: 2px;
+      overflow: hidden;
+      position: relative;
+    }
+    .dev-progress .dev-prog-bar::after {
+      content: "";
+      position: absolute;
+      inset: 0 50% 0 0;
+      background: linear-gradient(90deg, var(--safelight-dim), var(--safelight));
+      border-radius: 2px;
+    }
+
+    /* ---- Signature NEW #3 — AI 4-state indicator (待显影/曝光中/显影中/已显影, 3s each) ---- */
+    .ai-state {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      color: var(--paper-soft);
+      min-width: 92px;
+      height: 18px;
+    }
+    .ai-state .state-icon {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--brass);
+      box-shadow: 0 0 6px var(--brass-dim);
+      flex-shrink: 0;
+    }
+    .ai-state .state-stack {
+      position: relative;
+      width: 64px;
+      height: 16px;
+      overflow: hidden;
+    }
+    .ai-state .state-stack > span {
+      position: absolute;
+      top: 0;
+      left: 0;
+      opacity: 0;
+      white-space: nowrap;
+    }
+    .ai-state .state-stack > span:nth-child(1) { color: var(--silver);        animation: state-show 12s 0s infinite; }   /* 待显影 */
+    .ai-state .state-stack > span:nth-child(2) { color: var(--brass);         animation: state-show 12s 3s infinite; }   /* 曝光中 */
+    .ai-state .state-stack > span:nth-child(3) { color: var(--safelight);     animation: state-show 12s 6s infinite; }   /* 显影中 */
+    .ai-state .state-stack > span:nth-child(4) { color: var(--paper);         animation: state-show 12s 9s infinite; }   /* 已显影 */
+    @keyframes state-show {
+      0%, 24%   { opacity: 1; transform: translateY(0); }
+      25%, 100% { opacity: 0; transform: translateY(-2px); }
+    }
+
+    /* Top-bar actions */
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-left: var(--space-4);
+      border-left: var(--border-hairline);
+    }
+    .icon-btn {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      color: var(--paper-soft);
+      background: rgba(244, 234, 213, 0.04);
+      border: 1px solid rgba(244, 234, 213, 0.08);
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      transition: background 200ms, border-color 200ms;
+    }
+    .icon-btn:hover { background: rgba(244, 234, 213, 0.08); border-color: rgba(244, 234, 213, 0.16); }
+    .icon-btn .unread-dot {
+      position: absolute;
+      top: 3px;
+      right: 4px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--safelight);
+      box-shadow: 0 0 6px var(--safelight);
+      animation: dot-breathe 2.4s var(--ease-breathe) infinite;
+    }
+    .hangup-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      font-family: var(--font-body);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      color: var(--paper);
+      background: var(--velvet);
+      border: 1px solid rgba(122, 31, 31, 0.7);
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      box-shadow: 0 2px 12px rgba(92, 31, 31, 0.4), inset 0 1px 0 rgba(244, 234, 213, 0.12);
+      transition: background 200ms;
+    }
+    .hangup-btn:hover { background: #6f2626; }
+    .hangup-btn .hangup-x {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--paper);
+      color: var(--velvet);
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    /* ========================================================== */
+    /*  Stage 2 — Floating double-layer card (LAYOUT ④ CORE)      */
+    /* ========================================================== */
+    .float-card {
+      position: fixed;
+      left: 50%;
+      bottom: 132px;
+      transform: translateX(-50%);
+      z-index: 10;
+      width: min(800px, calc(100vw - 64px));
+      max-width: 800px;
+      background: rgba(13, 10, 10, 0.55);
+      backdrop-filter: blur(20px) saturate(1.15);
+      -webkit-backdrop-filter: blur(20px) saturate(1.15);
+      border: 1px solid rgba(176, 141, 87, 0.28);
+      border-radius: var(--radius-lg);
+      box-shadow:
+        0 12px 48px rgba(0, 0, 0, 0.55),
+        0 0 0 1px rgba(244, 234, 213, 0.03),
+        inset 0 1px 0 rgba(244, 234, 213, 0.08);
+      overflow: hidden;
+    }
+    /* Card header strip — caption toggle + hint */
+    .card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 14px 6px;
+      border-bottom: var(--border-hairline);
+      background: linear-gradient(180deg, rgba(58, 36, 24, 0.25), transparent);
+    }
+    .card-head .head-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--silver);
+    }
+    .card-head .head-label .frame-tag {
+      padding: 2px 6px;
+      border: 1px solid rgba(176, 141, 87, 0.4);
+      border-radius: var(--radius-sm);
+      color: var(--brass);
+      font-size: 9px;
+    }
+    .card-head .hide-cc {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 9px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      color: var(--silver);
+      background: transparent;
+      border: 1px solid rgba(244, 234, 213, 0.1);
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+    }
+    .card-head .hide-cc:hover { color: var(--paper); border-color: rgba(244, 234, 213, 0.22); }
+
+    /* Two layers */
+    .card-body {
+      position: relative;
+      padding: 12px 16px 14px;
+    }
+
+    .card-layer {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 6px 0;
+    }
+    .layer-glyph {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      border-radius: 50%;
+      border: 1px solid rgba(244, 234, 213, 0.12);
+      background: rgba(13, 10, 10, 0.5);
+    }
+    .layer-content { flex: 1 1 auto; min-width: 0; }
+    .layer-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 2px;
+    }
+    .layer-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+    .user-layer .layer-label { color: var(--brass); }
+    .ai-layer .layer-label { color: var(--safelight); }
+    .layer-state {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      padding: 1px 6px;
+      border-radius: var(--radius-sm);
+      text-transform: uppercase;
+    }
+    .user-layer .layer-state {
+      color: var(--brass);
+      background: rgba(176, 141, 87, 0.12);
+      border: 1px solid rgba(176, 141, 87, 0.3);
+    }
+    .ai-layer .layer-state {
+      color: var(--safelight);
+      background: rgba(122, 31, 31, 0.14);
+      border: 1px solid rgba(122, 31, 31, 0.45);
+    }
+    .ai-layer .layer-state .state-pulse {
+      display: inline-block;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--safelight);
+      margin-right: 4px;
+      animation: dot-breathe 1.4s var(--ease-breathe) infinite;
+    }
+
+    .layer-text {
+      font-family: var(--font-body);
+      font-size: 15px;
+      line-height: 1.55;
+      color: var(--paper);
+    }
+    .user-layer .layer-text {
+      font-family: var(--font-display);
+      font-size: 17px;
+      font-weight: 500;
+      font-style: italic;
+      color: var(--paper-soft);
+      letter-spacing: 0.01em;
+    }
+    .ai-layer .layer-text {
+      color: var(--paper);
+    }
+    .ai-layer .layer-text .cursor {
+      display: inline-block;
+      color: var(--safelight);
+      font-weight: 500;
+      animation: cursor-blink 1s steps(1) infinite;
+      margin-left: 1px;
+    }
+    @keyframes cursor-blink {
+      0%, 49%  { opacity: 1; }
+      50%, 100%{ opacity: 0; }
+    }
+
+    /* ---- Signature OLD #3 — Develop animation (blur 8px→0 + opacity 0→1) ---- */
+    /* User "曝光中" — exposure, quick flash 600ms */
+    .user-layer .layer-text {
+      animation: develop-in 600ms var(--ease-develop) 100ms both;
+    }
+    /* AI "显影中" — developing, gradual 800ms (as specified) */
+    .ai-layer .layer-text {
+      animation: develop-in 800ms var(--ease-develop) 350ms both;
+    }
+    @keyframes develop-in {
+      0%   { filter: blur(8px); opacity: 0; }
+      60%  { filter: blur(2px); opacity: 0.7; }
+      100% { filter: blur(0);   opacity: 1; }
+    }
+
+    /* Hairline divider between the two layers (LAYOUT ④ core signature) */
+    .card-divider {
+      height: 1px;
+      margin: 4px 40px 4px 40px;
+      background: linear-gradient(90deg, transparent, rgba(176, 141, 87, 0.4), transparent);
+      position: relative;
+    }
+    .card-divider::after {
+      content: "·";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -55%);
+      color: var(--brass);
+      font-size: 14px;
+      background: rgba(13, 10, 10, 0.9);
+      padding: 0 6px;
+      line-height: 1;
+    }
+
+    /* ---- Signature OLD #5 — Stamp-style timestamp (red border, mono, rotated) ---- */
+    .stamp {
+      position: absolute;
+      right: 14px;
+      bottom: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 4px 8px;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      line-height: 1.2;
+      color: var(--safelight);
+      border: 1.5px solid var(--safelight);
+      border-radius: 2px;
+      background: rgba(122, 31, 31, 0.06);
+      transform: rotate(-4deg);
+      opacity: 0.85;
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+    .stamp .stamp-time { font-size: 11px; font-weight: 500; }
+    .stamp .stamp-tag { font-size: 7px; letter-spacing: 0.2em; color: var(--safelight-dim); }
+
+    /* Card footer hint */
+    .card-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 14px 8px;
+      border-top: var(--border-hairline);
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.14em;
+      color: var(--silver-dim);
+      text-transform: uppercase;
+    }
+    .card-foot .foot-hint {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .card-foot .foot-link {
+      color: var(--brass);
+      cursor: pointer;
+    }
+    .card-foot .foot-link:hover { color: var(--paper); }
+
+    /* ========================================================== */
+    /*  Stage 3 — Bottom capsule control bar                       */
+    /* ========================================================== */
+    /* ---- Signature NEW #4 — Floating capsule (rgba(45,24,16,0.6) + brass border) ---- */
+    .control-capsule {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      transform: translateX(-50%);
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      max-width: 480px;
+      background: rgba(45, 24, 16, 0.6);
+      backdrop-filter: blur(20px) saturate(1.15);
+      -webkit-backdrop-filter: blur(20px) saturate(1.15);
+      border: 1px solid var(--brass-dim);
+      border-radius: var(--radius-pill);
+      box-shadow:
+        0 12px 40px rgba(0, 0, 0, 0.6),
+        inset 0 1px 0 rgba(244, 234, 213, 0.08),
+        0 0 24px rgba(122, 31, 31, 0.12);
+    }
+    .ctrl-btn {
+      position: relative;
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 17px;
+      color: var(--paper-soft);
+      background: rgba(244, 234, 213, 0.05);
+      border: 1px solid rgba(244, 234, 213, 0.1);
+      border-radius: 50%;
+      cursor: pointer;
+      transition: background 200ms, transform 200ms, border-color 200ms;
+    }
+    .ctrl-btn:hover { background: rgba(244, 234, 213, 0.1); border-color: rgba(244, 234, 213, 0.2); transform: translateY(-1px); }
+    .ctrl-btn.active {
+      color: var(--brass);
+      background: rgba(176, 141, 87, 0.14);
+      border-color: var(--brass-dim);
+    }
+    .ctrl-btn .ctrl-tip {
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 3px 8px;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      color: var(--paper);
+      background: rgba(13, 10, 10, 0.9);
+      border: var(--border-hairline);
+      border-radius: var(--radius-sm);
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 200ms;
+    }
+    .ctrl-btn:hover .ctrl-tip { opacity: 1; }
+    /* Hangup — uses --velvet, separated visually */
+    .ctrl-btn.hangup {
+      width: 48px;
+      height: 48px;
+      color: var(--paper);
+      background: var(--velvet);
+      border: 1px solid rgba(122, 31, 31, 0.7);
+      box-shadow: 0 2px 14px rgba(92, 31, 31, 0.5), inset 0 1px 0 rgba(244, 234, 213, 0.15);
+      margin-left: 8px;
+    }
+    .ctrl-btn.hangup:hover { background: #6f2626; transform: translateY(-1px); }
+    .ctrl-divider {
+      width: 1px;
+      height: 24px;
+      background: rgba(244, 234, 213, 0.12);
+      margin: 0 2px;
+    }
+
+    /* ========================================================== */
+    /*  History drawer (closed by default; [💬] calls it out)      */
+    /* ========================================================== */
+    .history-drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 40%;
+      min-width: 320px;
+      z-index: 20;
+      background: rgba(13, 10, 10, 0.92);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-left: var(--border-hairline);
+      box-shadow: -16px 0 48px rgba(0, 0, 0, 0.6);
+      transform: translateX(100%);
+      transition: transform 350ms var(--ease-develop);
+      display: flex;
+      flex-direction: column;
+    }
+    .history-drawer.open { transform: translateX(0); }
+    .drawer-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 22px;
+      border-bottom: var(--border-hairline);
+    }
+    .drawer-head .drawer-title {
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      color: var(--paper);
+    }
+    .drawer-head .drawer-sub {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      color: var(--silver);
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+    .drawer-close {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--paper-soft);
+      background: transparent;
+      border: 1px solid rgba(244, 234, 213, 0.12);
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .drawer-body {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      padding: 16px 22px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .msg { display: flex; flex-direction: column; gap: 4px; }
+    .msg .msg-role {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+    .msg.user .msg-role { color: var(--brass); }
+    .msg.ai .msg-role { color: var(--safelight); }
+    .msg.sys .msg-role { color: var(--silver); }
+    .msg .msg-text {
+      font-size: 13.5px;
+      line-height: 1.6;
+      color: var(--paper-soft);
+    }
+    .msg.user .msg-text { font-family: var(--font-display); font-style: italic; font-size: 15px; color: var(--paper); }
+    .msg.sys .msg-text { font-family: var(--font-mono); font-size: 11px; color: var(--silver); }
+
+    /* ========================================================== */
+    /*  Onboarding toast (fades — "点击 [💬] 查看对话历史")        */
+    /* ========================================================== */
+    .onboard-toast {
+      position: fixed;
+      bottom: 92px;
+      right: 24px;
+      z-index: 11;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      color: var(--paper-soft);
+      background: rgba(13, 10, 10, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(176, 141, 87, 0.3);
+      border-radius: var(--radius-pill);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+      animation: toast-fade 6s var(--ease-breathe) 1s forwards;
+      pointer-events: none;
+    }
+    .onboard-toast .toast-tag { color: var(--brass); }
+    @keyframes toast-fade {
+      0%   { opacity: 0; transform: translateY(8px); }
+      8%, 75% { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-4px); }
+    }
+
+    /* ========================================================== */
+    /*  Responsive — xs / sm-md / lg+                             */
+    /* ========================================================== */
+
+    /* sm-md (640–1023): card 600px, capsule auto */
+    @media (max-width: 1023px) {
+      .float-card { width: min(600px, calc(100vw - 40px)); bottom: 124px; }
+      .top-bar { gap: var(--space-4); padding: 8px 14px; }
+      .dev-progress { display: none; }
+      .brand-text .brand-sub { display: none; }
+    }
+
+    /* xs (<640): full-width card + single-line toggle, buttons 44×40 */
+    @media (max-width: 639px) {
+      .top-bar {
+        top: 10px;
+        left: 8px;
+        right: 8px;
+        transform: none;
+        width: auto;
+        border-radius: var(--radius-lg);
+        padding: 8px 10px;
+        gap: 8px;
+        flex-wrap: nowrap;
+        overflow: hidden;
+      }
+      .brand { padding-right: 8px; gap: 6px; }
+      .brand-text .brand-name { font-size: 15px; }
+      .ai-state { display: none; }
+      .icon-btn.hide-cc-label { display: none; }
+      .hangup-btn { padding: 5px 10px; font-size: 11px; }
+      .hangup-btn .hangup-text { display: none; }
+
+      /* Card: full width, compact, single-line toggle between 曝光/显影 */
+      .float-card {
+        left: 8px;
+        right: 8px;
+        bottom: 96px;
+        width: auto;
+        max-width: none;
+        transform: none;
+      }
+      .card-body { padding: 8px 12px 10px; }
+      .card-layer { gap: 8px; padding: 3px 0; }
+      .layer-glyph { width: 24px; height: 24px; font-size: 13px; }
+      .user-layer .layer-text { font-size: 14px; }
+      .ai-layer .layer-text { font-size: 13.5px; }
+      .card-divider { margin: 2px 32px; }
+      .stamp { right: 8px; bottom: 6px; transform: rotate(-3deg) scale(0.85); }
+
+      /* Mobile tab toggle: [曝光 | 显影] — radio hack, shows one line at a time */
+      .mobile-toggle { display: flex !important; }
+      .card-body .user-layer,
+      .card-body .ai-layer {
+        display: none;
+      }
+      #tab-user:checked ~ .card-body .user-layer,
+      #tab-ai:checked ~ .card-body .ai-layer { display: flex; }
+      .card-divider { display: none; }
+
+      /* Control capsule: full-width-ish, buttons 44×44 (min tap target) */
+      .control-capsule {
+        left: 8px;
+        right: 8px;
+        bottom: 12px;
+        transform: none;
+        max-width: none;
+        justify-content: space-around;
+        padding: 8px 10px;
+        border-radius: var(--radius-pill);
+      }
+      .ctrl-btn { width: 44px; height: 44px; font-size: 16px; }
+      .ctrl-btn.hangup { width: 46px; height: 46px; }
+      .ctrl-tip { display: none; }
+
+      .onboard-toast { right: 8px; bottom: 84px; font-size: 10px; }
+    }
+
+    /* Mobile toggle visible only on xs */
+    .mobile-toggle {
+      display: none;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px 6px;
+      border-bottom: var(--border-hairline);
+    }
+    .mobile-toggle label {
+      flex: 1;
+      text-align: center;
+      padding: 5px 8px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      color: var(--silver);
+      border: 1px solid transparent;
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+    }
+    .mobile-toggle label.active {
+      color: var(--paper);
+      background: rgba(176, 141, 87, 0.14);
+      border-color: var(--brass-dim);
+    }
+    .mobile-toggle input { display: none; }
+    #tab-user:checked ~ .mobile-toggle label[for="tab-user"] { color: var(--paper); background: rgba(176, 141, 87, 0.14); border-color: var(--brass-dim); }
+    #tab-ai:checked ~ .mobile-toggle label[for="tab-ai"] { color: var(--paper); background: rgba(122, 31, 31, 0.18); border-color: rgba(122, 31, 31, 0.5); }
+
+    /* Hide native scrollbars for clean screenshots */
+    ::-webkit-scrollbar { width: 0; height: 0; }
+  </style>
+</head>
+
+<body>
+  <!-- ======================================================== -->
+  <!--  Stage 0 — Full-screen video                             -->
+  <!-- ======================================================== -->
+  <div class="video-stage" aria-hidden="true">
+    <div class="video-portrait">
+      <div class="wall-frame"></div>
+      <div class="silhouette-body"></div>
+      <div class="silhouette-head"></div>
+      <div class="silhouette-glasses"></div>
+    </div>
+    <div class="ambient-glow"></div>
+    <div class="grain"></div>
+
+    <!-- Film perforations (8 holes each side) -->
+    <div class="film-perfs left">
+      <span class="film-hole"></span><span class="film-hole"></span>
+      <span class="film-hole"></span><span class="film-hole"></span>
+      <span class="film-hole"></span><span class="film-hole"></span>
+      <span class="film-hole"></span><span class="film-hole"></span>
+    </div>
+    <div class="film-perfs right">
+      <span class="film-hole"></span><span class="film-hole"></span>
+      <span class="film-hole"></span><span class="film-hole"></span>
+      <span class="film-hole"></span><span class="film-hole"></span>
+      <span class="film-hole"></span><span class="film-hole"></span>
+    </div>
+
+    <!-- VAD edge glow (speaking state) -->
+    <div class="vad-edge"></div>
+
+    <!-- Corner registration marks -->
+    <div class="reg-mark tl"></div>
+    <div class="reg-mark tr"></div>
+    <div class="reg-mark bl"></div>
+    <div class="reg-mark br"></div>
+
+    <!-- REC badge -->
+    <div class="rec-badge">
+      <span class="rec-dot"></span>
+      <span>REC · 4K · 安全灯模式</span>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!--  Stage 1 — Top floating status bar                       -->
+  <!-- ======================================================== -->
+  <header class="top-bar" role="banner">
+    <div class="brand">
+      <div class="logo-mark" aria-hidden="true"></div>
+      <div class="brand-text">
+        <span class="brand-name">XEngineer</span>
+        <span class="brand-sub">DARKROOM · LIVE</span>
+      </div>
+    </div>
+
+    <!-- Call timer (NEW #2) -->
+    <div class="dev-timer" title="通话计时器">
+      <span class="live-dot"></span>
+      <span class="dev-label">DEV</span>
+      <span class="dev-clock">00:42</span>
+    </div>
+
+    <!-- Develop progress (OLD #4) -->
+    <div class="dev-progress" title="显影时间">
+      <span class="dev-prog-label">显影</span>
+      <span class="dev-prog-bar"></span>
+      <span class="dev-prog-value">12s</span>
+    </div>
+
+    <!-- AI 4-state indicator (NEW #3) -->
+    <div class="ai-state" title="AI 状态">
+      <span class="state-icon"></span>
+      <span class="state-stack">
+        <span>待显影</span>
+        <span>曝光中</span>
+        <span>显影中</span>
+        <span>已显影</span>
+      </span>
+    </div>
+
+    <!-- Actions: history drawer + hide caption + hangup -->
+    <div class="top-actions">
+      <button class="icon-btn" id="history-btn" title="查看完整对话历史">
+        <span>💬</span>
+        <span class="unread-dot" aria-label="有未读回复"></span>
+      </button>
+      <button class="icon-btn hide-cc-label" id="hide-cc-btn" title="隐藏字幕">
+        <span>👁</span><span>隐藏字幕</span>
+      </button>
+      <button class="hangup-btn" id="hangup-top" title="挂断通话">
+        <span class="hangup-x">✕</span><span class="hangup-text">挂断</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ======================================================== -->
+  <!--  Stage 2 — Floating double-layer card (LAYOUT ④ CORE)    -->
+  <!-- ======================================================== -->
+  <!-- Radio inputs for mobile tab toggle (xs only) -->
+  <input type="radio" name="mobile-tab" id="tab-user" checked hidden />
+  <input type="radio" name="mobile-tab" id="tab-ai" hidden />
+
+  <section class="float-card" id="float-card" aria-label="实时对话卡片">
+    <!-- Mobile tab toggle (xs only) -->
+    <div class="mobile-toggle">
+      <label for="tab-user">👂 曝光</label>
+      <label for="tab-ai">🤖 显影</label>
+    </div>
+
+    <!-- Card head -->
+    <div class="card-head">
+      <div class="head-label">
+        <span class="frame-tag">FRAME 04</span>
+        <span>实时显影 · 双层字幕</span>
+      </div>
+      <button class="hide-cc" title="隐藏字幕">👁 隐藏字幕</button>
+    </div>
+
+    <!-- Card body — two layers + hairline divider -->
+    <div class="card-body">
+      <!-- Upper layer — USER ASR (曝光中 animation) -->
+      <div class="card-layer user-layer">
+        <div class="layer-glyph">👂</div>
+        <div class="layer-content">
+          <div class="layer-meta">
+            <span class="layer-label">曝光</span>
+            <span class="layer-state">曝光中</span>
+          </div>
+          <div class="layer-text">"你能看到我吗？"</div>
+        </div>
+      </div>
+
+      <!-- Hairline divider between the two layers -->
+      <div class="card-divider"></div>
+
+      <!-- Lower layer — AI streaming reply (显影中 animation) -->
+      <div class="card-layer ai-layer">
+        <div class="layer-glyph">🤖</div>
+        <div class="layer-content">
+          <div class="layer-meta">
+            <span class="layer-label">显影</span>
+            <span class="layer-state"><span class="state-pulse"></span>显影中</span>
+          </div>
+          <div class="layer-text">是的，我能看到你。你戴着…<span class="cursor">▌</span></div>
+        </div>
+      </div>
+
+      <!-- Stamp-style timestamp (OLD #5) -->
+      <div class="stamp" aria-hidden="true">
+        <span class="stamp-time">14:32:08</span>
+        <span class="stamp-tag">DEV · FRAME 04</span>
+      </div>
+    </div>
+
+    <!-- Card foot -->
+    <div class="card-foot">
+      <span class="foot-hint">⌁ 流式显影中 · 800ms</span>
+      <span class="foot-link" id="open-drawer-link">点击查看完整对话 →</span>
+    </div>
+  </section>
+
+  <!-- ======================================================== -->
+  <!--  Stage 3 — Bottom capsule control bar (NEW #4)           -->
+  <!-- ======================================================== -->
+  <nav class="control-capsule" aria-label="通话控制">
+    <button class="ctrl-btn active" title="摄像头开关">
+      <span>📷</span>
+      <span class="ctrl-tip">摄像头</span>
+    </button>
+    <button class="ctrl-btn active" title="麦克风">
+      <span>🎙</span>
+      <span class="ctrl-tip">麦克风</span>
+    </button>
+    <button class="ctrl-btn" title="静音">
+      <span>🔇</span>
+      <span class="ctrl-tip">静音</span>
+    </button>
+    <button class="ctrl-btn" title="截图">
+      <span>🖨</span>
+      <span class="ctrl-tip">相纸截图</span>
+    </button>
+    <span class="ctrl-divider"></span>
+    <button class="ctrl-btn hangup" title="挂断通话" id="hangup-bottom">
+      <span>✕</span>
+      <span class="ctrl-tip">挂断</span>
+    </button>
+  </nav>
+
+  <!-- ======================================================== -->
+  <!--  History drawer (closed by default)                      -->
+  <!-- ======================================================== -->
+  <aside class="history-drawer" id="history-drawer" aria-hidden="true">
+    <div class="drawer-head">
+      <div>
+        <div class="drawer-title">显影记录</div>
+        <div class="drawer-sub">DEVELOPMENT LOG · 5 FRAMES</div>
+      </div>
+      <button class="drawer-close" id="drawer-close">✕</button>
+    </div>
+    <div class="drawer-body">
+      <div class="msg user">
+        <span class="msg-role">曝光 · USER</span>
+        <span class="msg-text">你好，你能看到我吗？</span>
+      </div>
+      <div class="msg ai">
+        <span class="msg-role">显影 · AI</span>
+        <span class="msg-text">是的，我能看到你。你戴着一副金属半框眼镜，身穿深蓝色 T 恤。身后的墙上挂着一幅风景画。</span>
+      </div>
+      <div class="msg sys">
+        <span class="msg-role">系统</span>
+        <span class="msg-text">摄像头已开启</span>
+      </div>
+      <div class="msg user">
+        <span class="msg-role">曝光 · USER</span>
+        <span class="msg-text">好的，那你能听到我说话吗？</span>
+      </div>
+      <div class="msg ai">
+        <span class="msg-role">显影中 · AI</span>
+        <span class="msg-text">能听到，你的声音很清晰。请问有什么我可以帮你的？▌</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ======================================================== -->
+  <!--  Onboarding toast                                        -->
+  <!-- ======================================================== -->
+  <div class="onboard-toast">
+    <span class="toast-tag">💬</span>
+    <span>点击右上角查看完整对话历史</span>
+  </div>
+
+  <!-- ======================================================== -->
+  <!--  Minimal JS — drawer toggle + caption hide (demo only)   -->
+  <!-- ======================================================== -->
+  <script>
+    (function () {
+      var drawer = document.getElementById('history-drawer');
+      var openBtn = document.getElementById('history-btn');
+      var openLink = document.getElementById('open-drawer-link');
+      var closeBtn = document.getElementById('drawer-close');
+      function open()  { drawer.classList.add('open');    drawer.setAttribute('aria-hidden', 'false'); }
+      function close() { drawer.classList.remove('open'); drawer.setAttribute('aria-hidden', 'true');  }
+      if (openBtn)  openBtn.addEventListener('click', open);
+      if (openLink) openLink.addEventListener('click', open);
+      if (closeBtn) closeBtn.addEventListener('click', close);
+
+      var card = document.getElementById('float-card');
+      var hideBtn = document.querySelector('#float-card .hide-cc');
+      if (hideBtn) hideBtn.addEventListener('click', function () {
+        card.style.transition = 'opacity 300ms, transform 300ms';
+        card.style.opacity = '0';
+        card.style.transform = 'translateX(-50%) translateY(12px)';
+        card.style.pointerEvents = 'none';
+        // auto-resurface demo after 2.5s (simulates "new AI reply resurfaces card")
+        setTimeout(function () {
+          card.style.opacity = '1';
+          card.style.transform = 'translateX(-50%)';
+          card.style.pointerEvents = 'auto';
+        }, 2500);
+      });
+    })();
+  </script>
+</body>
+</html>

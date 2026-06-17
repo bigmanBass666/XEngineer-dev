@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>XEngineer · Darkroom Mockup</title>
+
+  <!-- Google Fonts: Cormorant Garamond + Inter + IBM Plex Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Inter:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+    /* ========================================================== */
+    /*  B · DARKROOM — Design Tokens                              */
+    /* ========================================================== */
+    :root {
+      /* Colors — darkroom palette */
+      --safelight: #7a1f1f;            /* 安全灯红 — 深酒红，非荧光 */
+      --safelight-dim: #5a1818;        /* 暗化安全灯红（用于边框/分隔） */
+      --dev-black: #0d0a0a;            /* 显影黑，带暖色偏移 */
+      --dev-black-2: #15110f;          /* 略亮一层，用于面板背景 */
+      --paper: #f4ead5;                /* 相纸米白，局部高亮 */
+      --paper-soft: rgba(244, 234, 213, 0.85);
+      --silver: #8a8478;               /* 银盐灰 */
+      --silver-dim: rgba(138, 132, 120, 0.45);
+      --developer: #3a2418;            /* 显影液深棕 */
+      --developer-soft: rgba(58, 36, 24, 0.55);
+      --red-glow: rgba(122, 31, 31, 0.25);
+
+      /* Typography */
+      --font-display: 'Cormorant Garamond', 'Times New Roman', serif;
+      --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+
+      /* Radius — darkroom prefers soft rounded corners */
+      --radius-sm: 2px;
+      --radius-md: 6px;
+      --radius-lg: 12px;
+
+      /* Borders */
+      --border-hairline: 1px solid rgba(244, 234, 213, 0.10);
+      --border-paper: 1px solid var(--paper);
+      --border-safelight: 1px solid rgba(122, 31, 31, 0.55);
+
+      /* Spacing */
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-6: 24px;
+      --space-8: 32px;
+
+      /* Easing */
+      --ease-develop: cubic-bezier(0.4, 0, 0.2, 1);
+      --ease-breathe: cubic-bezier(0.45, 0, 0.55, 1);
+    }
+
+    /* ========================================================== */
+    /*  Base                                                      */
+    /* ========================================================== */
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background-color: var(--dev-black);
+      color: var(--paper);
+      font-family: var(--font-body);
+      font-size: 14px;
+      line-height: 1.5;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* ========================================================== */
+    /*  Signature #1 — Red ambient safelight glow                */
+    /*  radial-gradient from top-left corner                     */
+    /* ========================================================== */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background:
+        radial-gradient(circle at 15% 20%, var(--red-glow), transparent 50%),
+        radial-gradient(circle at 88% 92%, rgba(58, 36, 24, 0.35), transparent 45%);
+    }
+
+    /* Subtle paper grain on top of background — adds tactility */
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.04;
+      background-image:
+        repeating-linear-gradient(0deg, transparent 0 2px, rgba(244, 234, 213, 1) 2px 3px),
+        repeating-linear-gradient(90deg, transparent 0 2px, rgba(244, 234, 213, 1) 2px 3px);
+      mix-blend-mode: overlay;
+    }
+
+    /* ========================================================== */
+    /*  App shell — header / main / statusbar                     */
+    /* ========================================================== */
+    .app {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100vh;
+      padding: 0;
+    }
+
+    /* ========================================================== */
+    /*  Header (h-14 = 56px)                                      */
+    /* ========================================================== */
+    .header {
+      flex: 0 0 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 var(--space-6);
+      background: linear-gradient(180deg, rgba(13, 10, 10, 0.95) 0%, rgba(21, 17, 15, 0.95) 100%);
+      border-bottom: var(--border-hairline);
+      position: relative;
+    }
+
+    /* Faint safelight strip along the bottom edge of header */
+    .header::after {
+      content: "";
+      position: absolute;
+      left: 35%;
+      right: 35%;
+      bottom: -1px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--safelight), transparent);
+      opacity: 0.7;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+    }
+
+    /* Safelight aperture logo — circular red glow with inner ring */
+    .logo-mark {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      position: relative;
+      background: radial-gradient(circle, var(--safelight) 0%, var(--safelight-dim) 60%, transparent 100%);
+      box-shadow:
+        0 0 12px var(--red-glow),
+        inset 0 0 6px rgba(13, 10, 10, 0.6);
+      flex-shrink: 0;
+    }
+    .logo-mark::after {
+      content: "";
+      position: absolute;
+      inset: 6px;
+      border-radius: 50%;
+      border: 1px solid rgba(244, 234, 213, 0.6);
+      background: var(--dev-black);
+    }
+    .logo-mark::before {
+      content: "";
+      position: absolute;
+      inset: 11px;
+      border-radius: 50%;
+      background: var(--paper);
+      opacity: 0.8;
+      animation: safelight-breathe 4s var(--ease-breathe) infinite;
+    }
+
+    @keyframes safelight-breathe {
+      0%, 100% { opacity: 0.5; transform: scale(0.9); }
+      50%      { opacity: 1;   transform: scale(1.05); }
+    }
+
+    .brand-text {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      line-height: 1.1;
+    }
+    .brand-name {
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: 22px;
+      letter-spacing: 0.04em;
+      color: var(--paper);
+    }
+    .brand-sub {
+      font-family: var(--font-mono);
+      font-weight: 400;
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--silver);
+      margin-top: 2px;
+    }
+
+    /* Right side — technical data readouts */
+    .header-readouts {
+      display: flex;
+      align-items: center;
+      gap: var(--space-6);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--silver);
+    }
+    .readout {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.08em;
+    }
+    .readout .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--silver);
+    }
+    .readout .dot.live {
+      background: var(--safelight);
+      box-shadow: 0 0 6px var(--safelight);
+      animation: dot-breathe 2.4s var(--ease-breathe) infinite;
+    }
+    @keyframes dot-breathe {
+      0%, 100% { opacity: 0.55; }
+      50%      { opacity: 1; }
+    }
+
+    /* ========================================================== */
+    /*  Main — two columns                                        */
+    /* ========================================================== */
+    .main {
+      flex: 1 1 auto;
+      display: flex;
+      min-height: 0;
+    }
+
+    /* -------------------------------------------------------- */
+    /*  Left column — camera pane                              */
+    /* -------------------------------------------------------- */
+    .col-camera {
+      flex: 0 0 44%;
+      display: flex;
+      flex-direction: column;
+      padding: var(--space-6) var(--space-6) var(--space-4);
+      border-right: var(--border-hairline);
+      gap: var(--space-4);
+      min-width: 0;
+    }
+
+    .camera-frame-wrap {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+
+    /* Signature #2 — Film perforation strips (left & right) */
+    .film-strip {
+      flex: 0 0 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      background: var(--dev-black);
+      border: 1px solid rgba(244, 234, 213, 0.06);
+      border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+    }
+    .film-strip.right {
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      border-left: none;
+    }
+    .film-strip.left {
+      border-right: none;
+    }
+    .film-hole {
+      width: 4px;
+      height: 4px;
+      background: var(--silver);
+      opacity: 0.3;
+      border-radius: 1px;
+    }
+
+    /* Camera viewport — the 4:3 frame */
+    .camera-frame {
+      flex: 1 1 auto;
+      position: relative;
+      aspect-ratio: 4 / 3;
+      max-height: 100%;
+      background:
+        radial-gradient(ellipse at center, rgba(58, 36, 24, 0.4) 0%, var(--dev-black) 70%),
+        linear-gradient(135deg, #1a1310 0%, #0d0a0a 100%);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(244, 234, 213, 0.08);
+    }
+
+    /* Corner registration marks — photographic composition guides */
+    .camera-corner {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      border-color: var(--paper-soft);
+      opacity: 0.6;
+      pointer-events: none;
+    }
+    .camera-corner.tl { top: 8px; left: 8px; border-top: 1px solid; border-left: 1px solid; }
+    .camera-corner.tr { top: 8px; right: 8px; border-top: 1px solid; border-right: 1px solid; }
+    .camera-corner.bl { bottom: 8px; left: 8px; border-bottom: 1px solid; border-left: 1px solid; }
+    .camera-corner.br { bottom: 8px; right: 8px; border-bottom: 1px solid; border-right: 1px solid; }
+
+    /* Crosshair — faint center registration */
+    .camera-crosshair {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 20px;
+      height: 20px;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+    .camera-crosshair::before,
+    .camera-crosshair::after {
+      content: "";
+      position: absolute;
+      background: rgba(244, 234, 213, 0.25);
+    }
+    .camera-crosshair::before {
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 1px;
+    }
+    .camera-crosshair::after {
+      left: 50%;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+    }
+
+    /* Simulated portrait silhouette in the darkroom — vaguely human shape */
+    .camera-portrait {
+      width: 70%;
+      height: 80%;
+      position: relative;
+      opacity: 0.55;
+      filter: blur(0.4px) contrast(1.05);
+    }
+    .camera-portrait .silhouette-head {
+      position: absolute;
+      top: 8%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80px;
+      height: 96px;
+      border-radius: 50% 50% 48% 48%;
+      background: radial-gradient(circle at 50% 40%, rgba(244, 234, 213, 0.35) 0%, rgba(138, 132, 120, 0.2) 50%, transparent 80%);
+      filter: blur(1.5px);
+    }
+    .camera-portrait .silhouette-body {
+      position: absolute;
+      top: 38%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 160px;
+      height: 130px;
+      border-radius: 50% 50% 8% 8% / 60% 60% 8% 8%;
+      background: radial-gradient(ellipse at 50% 30%, rgba(58, 36, 24, 0.85) 0%, rgba(13, 10, 10, 0.6) 70%, transparent 100%);
+      filter: blur(2px);
+    }
+    .camera-portrait .glasses {
+      position: absolute;
+      top: 23%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 64px;
+      height: 14px;
+      border-top: 1px solid rgba(244, 234, 213, 0.55);
+      border-radius: 50% 50% 0 0;
+      box-shadow:
+        14px 0 0 -8px rgba(244, 234, 213, 0.55),
+        -14px 0 0 -8px rgba(244, 234, 213, 0.55);
+      filter: blur(0.6px);
+    }
+
+    /* "DEVELOPING" caption inside camera */
+    .camera-caption {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.3em;
+      color: var(--silver);
+      opacity: 0.7;
+      text-transform: uppercase;
+    }
+    .camera-caption .blink {
+      color: var(--safelight);
+      animation: caption-blink 1.6s steps(2, end) infinite;
+    }
+    @keyframes caption-blink {
+      0%, 49%  { opacity: 1; }
+      50%, 100%{ opacity: 0.15; }
+    }
+
+    /* Camera controls row — REC + test message */
+    .camera-controls {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      flex-wrap: wrap;
+    }
+
+    /* REC button — circular red dot + label */
+    .btn-rec {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 16px 8px 12px;
+      background: linear-gradient(180deg, rgba(122, 31, 31, 0.18), rgba(122, 31, 31, 0.08));
+      border: var(--border-safelight);
+      border-radius: var(--radius-md);
+      color: var(--paper);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s var(--ease-breathe);
+    }
+    .btn-rec:hover {
+      background: linear-gradient(180deg, rgba(122, 31, 31, 0.32), rgba(122, 31, 31, 0.16));
+      box-shadow: 0 0 14px var(--red-glow);
+    }
+    .btn-rec .rec-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--safelight);
+      box-shadow: 0 0 8px var(--safelight);
+      animation: rec-pulse 1.4s var(--ease-breathe) infinite;
+    }
+    @keyframes rec-pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50%      { transform: scale(0.7); opacity: 0.5; }
+    }
+
+    /* Test message button — quieter, paper-bordered */
+    .btn-test {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      background: transparent;
+      border: 1px solid rgba(244, 234, 213, 0.18);
+      border-radius: var(--radius-md);
+      color: var(--silver);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      cursor: pointer;
+      transition: all 0.2s var(--ease-breathe);
+    }
+    .btn-test:hover {
+      color: var(--paper);
+      border-color: rgba(244, 234, 213, 0.45);
+    }
+
+    /* Small caption below the buttons */
+    .camera-footnote {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--silver-dim);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    /* -------------------------------------------------------- */
+    /*  Right column — conversation pane                       */
+    /* -------------------------------------------------------- */
+    .col-chat {
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      padding: var(--space-6) var(--space-6) var(--space-4);
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .chat-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      padding-bottom: var(--space-3);
+      margin-bottom: var(--space-4);
+      border-bottom: var(--border-hairline);
+    }
+    .chat-title {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: 17px;
+      letter-spacing: 0.04em;
+      color: var(--paper);
+    }
+    .chat-counter {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--silver-dim);
+      letter-spacing: 0.1em;
+    }
+
+    .chat-stream {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      padding-right: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-6);
+      scrollbar-width: thin;
+      scrollbar-color: var(--developer) transparent;
+    }
+    .chat-stream::-webkit-scrollbar { width: 4px; }
+    .chat-stream::-webkit-scrollbar-thumb {
+      background: var(--developer);
+      border-radius: 2px;
+    }
+
+    /* Individual message */
+    .msg {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+      max-width: 88%;
+    }
+    .msg.user { align-self: flex-end; align-items: flex-end; }
+    .msg.ai   { align-self: flex-start; align-items: flex-start; }
+    .msg.sys  { align-self: center; align-items: center; max-width: 70%; }
+
+    .msg-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--silver-dim);
+    }
+    .msg.user .msg-meta { flex-direction: row-reverse; }
+    .msg-role { font-weight: 500; }
+    .msg.user .msg-role { color: var(--paper-soft); }
+    .msg.ai .msg-role   { color: var(--safelight); }
+    .msg.sys .msg-role  { color: var(--silver); }
+
+    /* Bubble styles */
+    .bubble {
+      padding: 10px 14px;
+      font-family: var(--font-body);
+      font-size: 13.5px;
+      line-height: 1.55;
+      border-radius: var(--radius-md);
+      position: relative;
+    }
+
+    .msg.user .bubble {
+      background: linear-gradient(180deg, rgba(122, 31, 31, 0.18), rgba(122, 31, 31, 0.10));
+      border: 1px solid rgba(122, 31, 31, 0.35);
+      color: var(--paper);
+      border-bottom-right-radius: var(--radius-sm);
+    }
+    .msg.ai .bubble {
+      background: var(--dev-black-2);
+      border: var(--border-hairline);
+      color: var(--paper-soft);
+      border-bottom-left-radius: var(--radius-sm);
+    }
+    .msg.sys .bubble {
+      background: rgba(58, 36, 24, 0.25);
+      border-left: 2px solid var(--developer);
+      border-radius: var(--radius-sm);
+      color: var(--silver);
+      font-size: 12px;
+      text-align: center;
+    }
+
+    /* Signature #5 — Stamp-style timestamp at bottom of every message */
+    .msg-stamp {
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      letter-spacing: 0.1em;
+      color: var(--safelight);
+      opacity: 0.85;
+      padding: 1px 4px;
+      border: 1px solid rgba(122, 31, 31, 0.4);
+      border-radius: 1px;
+      background: rgba(122, 31, 31, 0.05);
+      display: inline-block;
+      text-transform: uppercase;
+    }
+    .msg.user .msg-stamp { align-self: flex-end; }
+    .msg.sys  .msg-stamp { align-self: center; }
+
+    /* Signature #3 — Streaming text developing animation
+       The last few chars of an in-flight AI reply stay in mid-develop state */
+    .developing-word {
+      display: inline-block;
+      filter: blur(8px);
+      opacity: 0;
+      animation: develop-in 800ms var(--ease-develop) forwards;
+    }
+    .developing-word.d1 { animation-delay: 0ms; }
+    .developing-word.d2 { animation-delay: 240ms; }
+    .developing-word.d3 { animation-delay: 480ms; }
+    .developing-word.d4 { animation-delay: 720ms; }
+    .developing-word.d5 { animation-delay: 960ms; }
+
+    @keyframes develop-in {
+      0%   { filter: blur(8px); opacity: 0; }
+      40%  { filter: blur(5px); opacity: 0.55; }
+      75%  { filter: blur(2px); opacity: 0.85; }
+      100% { filter: blur(0);   opacity: 1; }
+    }
+
+    /* Persistent "still developing" cursor — a faint safelight caret */
+    .develop-caret {
+      display: inline-block;
+      width: 7px;
+      height: 14px;
+      vertical-align: text-bottom;
+      margin-left: 2px;
+      background: var(--safelight);
+      box-shadow: 0 0 6px var(--red-glow);
+      animation: caret-breathe 1.2s var(--ease-breathe) infinite;
+    }
+    @keyframes caret-breathe {
+      0%, 100% { opacity: 0.4; }
+      50%      { opacity: 1; }
+    }
+
+    /* "Still developing" indicator — a small running blur tail on the last chars */
+    .developing-tail {
+      display: inline-block;
+      filter: blur(4px);
+      opacity: 0.6;
+      animation: tail-shimmer 1.6s var(--ease-breathe) infinite;
+    }
+    @keyframes tail-shimmer {
+      0%, 100% { filter: blur(4px); opacity: 0.5; }
+      50%      { filter: blur(2.5px); opacity: 0.8; }
+    }
+
+    /* Chat footer — small compositional cue */
+    .chat-footer {
+      flex: 0 0 auto;
+      padding-top: var(--space-3);
+      border-top: var(--border-hairline);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--silver-dim);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .chat-footer .hint-pulse {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .chat-footer .hint-pulse .dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--safelight);
+      animation: dot-breathe 2.4s var(--ease-breathe) infinite;
+    }
+
+    /* ========================================================== */
+    /*  StatusBar (footer)                                        */
+    /* ========================================================== */
+    .statusbar {
+      flex: 0 0 36px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 var(--space-6);
+      background: linear-gradient(180deg, var(--dev-black-2) 0%, var(--dev-black) 100%);
+      border-top: var(--border-hairline);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--silver);
+      letter-spacing: 0.1em;
+    }
+    .status-group {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+    }
+    .status-cell {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .status-cell .label { color: var(--silver-dim); }
+    .status-cell .value { color: var(--paper-soft); }
+    .status-cell .sep {
+      color: var(--silver-dim);
+      opacity: 0.5;
+      margin: 0 4px;
+    }
+    /* Signature #4 — "DEV 12s" developing-time indicator replaces "loading" */
+    .status-cell.dev .value {
+      color: var(--safelight);
+      letter-spacing: 0.12em;
+      animation: dev-tick 1s steps(1, end) infinite;
+    }
+    @keyframes dev-tick {
+      0%, 100% { opacity: 1; }
+      50%      { opacity: 0.55; }
+    }
+    .status-cell.dev::before {
+      content: "◐";
+      color: var(--safelight);
+      animation: dev-rotate 2.4s linear infinite;
+      display: inline-block;
+      font-size: 10px;
+    }
+    @keyframes dev-rotate {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+
+    /* ========================================================== */
+    /*  Responsive — mobile 375×812                              */
+    /* ========================================================== */
+    @media (max-width: 768px) {
+      .header {
+        padding: 0 var(--space-4);
+      }
+      .brand-name { font-size: 18px; }
+      .brand-sub { font-size: 9px; letter-spacing: 0.14em; }
+      .header-readouts { gap: var(--space-3); font-size: 10px; }
+      .header-readouts .readout:nth-child(3),
+      .header-readouts .readout:nth-child(4) { display: none; }
+
+      .main {
+        flex-direction: column;
+        overflow-y: auto;
+      }
+
+      .col-camera {
+        flex: 0 0 auto;
+        border-right: none;
+        border-bottom: var(--border-hairline);
+        padding: var(--space-4);
+        gap: var(--space-3);
+      }
+      .camera-frame-wrap {
+        max-height: 320px;
+      }
+
+      .col-chat {
+        flex: 1 1 auto;
+        padding: var(--space-4);
+        min-height: 400px;
+        overflow-y: auto;
+      }
+
+      .statusbar {
+        padding: 0 var(--space-4);
+        font-size: 10px;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        white-space: nowrap;
+        gap: var(--space-3);
+        justify-content: flex-start;
+      }
+      .status-cell .sep:last-child { display: none; }
+      .status-cell .label { display: none; }
+      .status-group { gap: var(--space-3); }
+
+      .msg { max-width: 95%; }
+    }
+
+    /* Even tighter at 375px */
+    @media (max-width: 420px) {
+      .header { flex: 0 0 50px; }
+      .header-left { gap: var(--space-3); }
+      .logo-mark { width: 24px; height: 24px; }
+      .brand-name { font-size: 16px; }
+      .brand-sub { font-size: 8px; }
+      .header-readouts { gap: var(--space-2); font-size: 9.5px; }
+      .header-readouts .readout:nth-child(2) { display: none; }
+    }
+
+  </style>
+</head>
+<body>
+  <div class="app">
+
+    <!-- ====================================================== -->
+    <!--  HEADER (h-14)                                          -->
+    <!-- ====================================================== -->
+    <header class="header">
+      <div class="header-left">
+        <div class="logo-mark" aria-hidden="true"></div>
+        <div class="brand-text">
+          <span class="brand-name">XEngineer</span>
+          <span class="brand-sub">AI Vision Conversation Assistant</span>
+        </div>
+      </div>
+      <div class="header-readouts">
+        <span class="readout"><span class="dot live"></span>WS·CONNECTED</span>
+        <span class="readout"><span class="dot"></span>VAD·SILENT</span>
+        <span class="readout">24kHz</span>
+        <span class="readout">v0.1.0</span>
+      </div>
+    </header>
+
+    <!-- ====================================================== -->
+    <!--  MAIN                                                   -->
+    <!-- ====================================================== -->
+    <main class="main">
+
+      <!-- ===== LEFT — Camera pane ===== -->
+      <section class="col-camera">
+        <div class="camera-frame-wrap">
+
+          <!-- Film perforation strip — LEFT -->
+          <div class="film-strip left" aria-hidden="true">
+            <span class="film-hole"></span>
+            <span class="film-hole"></span>
+            <span class="film-hole"></span>
+            <span class="film-hole"></span>
+            <span class="film-hole"></span>
+            <span class="film-hole"></span>
+            <span class="film-hole"></span>
+            <span class="film-hole"></span>
+          </div>
+
+          <!-- Camera viewport (4:3) -->
+          <div class="camera-frame">
+            <span class="camera-corner tl" aria-hidden="true"></span>
+            <span class="camera-corner tr" aria-hidden="true"></span>
+            <span class="camera-corner bl" aria-hidden="true"></span>
+            <span class="camera-corner br" aria-hidden="true"></span>
+            <span class="camera-crosshair" aria-hidden="true"></span>
+
+            <!-- Simulated portrait silhouette emerging in the darkroom -->
+            <div class="camera-portrait" aria-hidden="true">
+              <div class="silhouette-head"></div>
+              <div class="glasses"></div>
+              <div class="silhouette-body"></div>
+            </div>
+
+            <div class="camera-caption">
+              DEVELOPING<span class="blink"> · </span>FRAME 042
+            </div>
+          </div>
+
+          <!-- Film perforation strip — RIGHT -->
+          <div class="film-strip right" aria-hidden="true">
+            <span class="film-hole"></span>
+            <span class="film-hole"></span>
+            <span class="film-hole"></span>
+            <span class="film-hole"></span>
+            <span class="film-hole"></span>
+            <span class="film-hole"></span>
+            <span class="film-hole"></span>
+            <span class="film-hole"></span>
+          </div>
+
+        </div>
+
+        <!-- Camera controls -->
+        <div class="camera-controls">
+          <button class="btn-rec" type="button">
+            <span class="rec-dot" aria-hidden="true"></span>
+            <span>● REC</span>
+          </button>
+          <button class="btn-test" type="button">
+            <span>发送测试消息</span>
+          </button>
+        </div>
+        <div class="camera-footnote">EXPOSURE · 1/30s · ISO 400 · SAFELIGHT ON</div>
+      </section>
+
+      <!-- ===== RIGHT — Conversation pane ===== -->
+      <section class="col-chat">
+        <div class="chat-header">
+          <span class="chat-title">Conversation</span>
+          <span class="chat-counter">04 / 04 FRAMES</span>
+        </div>
+
+        <div class="chat-stream">
+
+          <!-- USER message -->
+          <article class="msg user">
+            <div class="msg-meta">
+              <span class="msg-role">USER</span>
+              <span>· 14:22:03</span>
+            </div>
+            <div class="bubble">你好，你能看到我吗？</div>
+            <span class="msg-stamp">22:03 · FRAME 001</span>
+          </article>
+
+          <!-- AI message — first complete reply -->
+          <article class="msg ai">
+            <div class="msg-meta">
+              <span class="msg-role">AI</span>
+              <span>· 14:22:09</span>
+            </div>
+            <div class="bubble">
+              是的，我能看到你。你戴着一副金属半框眼镜，身穿深蓝色 T 恤，背景是一面暖色调的墙。光线从左侧打过来，整体曝光偏暗但层次还可以。
+            </div>
+            <span class="msg-stamp">22:09 · DEVELOPED</span>
+          </article>
+
+          <!-- SYS message -->
+          <article class="msg sys">
+            <div class="msg-meta">
+              <span class="msg-role">SYS</span>
+            </div>
+            <div class="bubble">摄像头已开启 · 4:3 · 24FPS · 安全灯模式激活</div>
+            <span class="msg-stamp">22:10 · SYSTEM</span>
+          </article>
+
+          <!-- USER message — second question -->
+          <article class="msg user">
+            <div class="msg-meta">
+              <span class="msg-role">USER</span>
+              <span>· 14:22:24</span>
+            </div>
+            <div class="bubble">好的，那你能听到我说话吗？</div>
+            <span class="msg-stamp">22:24 · FRAME 002</span>
+          </article>
+
+          <!-- AI message — currently streaming (developing) -->
+          <article class="msg ai">
+            <div class="msg-meta">
+              <span class="msg-role">AI</span>
+              <span>· 14:22:31 · DEV</span>
+            </div>
+            <div class="bubble">
+              <!-- Already developed portion -->
+              能听到，声音很清楚。你的语速中等，发音清晰，没有明显底噪。我现在同时在看你和听你
+              <!-- Signature #3 — words in mid-develop state -->
+              <span class="developing-word d1">,</span>
+              <span class="developing-word d2">就</span>
+              <span class="developing-word d3">像</span>
+              <span class="developing-word d4">在</span>
+              <span class="developing-word d5">暗</span>
+              <span class="developing-tail">房</span><span class="develop-caret"></span>
+            </div>
+            <span class="msg-stamp">22:31 · DEVELOPING…</span>
+          </article>
+
+        </div>
+
+        <div class="chat-footer">
+          <span class="hint-pulse">
+            <span class="dot"></span>
+            正在显影 · 流式回复中
+          </span>
+          <span>RATIO 1:1 · PAPER #F4EAD5</span>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- ====================================================== -->
+    <!--  STATUSBAR                                              -->
+    <!-- ====================================================== -->
+    <footer class="statusbar">
+      <div class="status-group">
+        <span class="status-cell">
+          <span class="label">WS:</span><span class="value">CONNECTED</span>
+        </span>
+        <span class="sep">│</span>
+        <span class="status-cell">
+          <span class="label">VAD:</span><span class="value">SILENT</span>
+        </span>
+        <span class="sep">│</span>
+        <!-- Signature #4 — DEV 12s (developing time replaces "loading") -->
+        <span class="status-cell dev">
+          <span class="label">DEV:</span><span class="value">12s</span>
+        </span>
+        <span class="sep">│</span>
+        <span class="status-cell">
+          <span class="value">24kHz</span>
+        </span>
+      </div>
+      <div class="status-group">
+        <span class="status-cell">
+          <span class="label">SAFELIGHT</span>
+          <span class="value">●</span>
+        </span>
+        <span class="sep">│</span>
+        <span class="status-cell">
+          <span class="value">v0.1.0</span>
+        </span>
+      </div>
+    </footer>
+
+  </div>
+</body>
+</html>

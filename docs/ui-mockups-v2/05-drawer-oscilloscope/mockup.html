@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XEngineer — Drawer × Oscilloscope Mockup (M11)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* =====================================================================
+   XEngineer · Mockup M11 — 布局③ 全屏+可折叠抽屉 × 示波器 signature
+   单文件静态 mockup · 仅供视觉评审 · 不连真实后端 · 不调 getUserMedia
+   默认状态：视频全屏 + 浮动 AI 字幕条 + 底部控制条胶囊 + 顶部状态栏
+   抽屉打开（body.drawer-open）：视频压缩到 60%（桌面）/ 50%（平板）/ 0%（手机）+ 右侧抽屉
+   ===================================================================== */
+
+:root {
+  /* === Surface (工程灰梯度) === */
+  --surface-0: #0a0a0b;
+  --surface-1: #131316;
+  --surface-2: #1c1c20;
+  --surface-3: #26262c;
+  --surface-4: #34343c;
+
+  /* === Text === */
+  --text-primary: #f5f5f7;
+  --text-secondary: #a1a1a8;
+  --text-tertiary: #6b6b73;
+  --text-inverse: #0a0a0b;
+
+  /* === Brand (朱砂红 — signature) === */
+  --brand-500: #c8453c;
+  --brand-400: #d65a52;
+  --brand-600: #a83a32;
+  --brand-glow: rgba(200, 69, 60, 0.35);
+
+  /* === Functional === */
+  --accent-success: #4ade80;
+  --accent-warning: #fbbf24;
+  --accent-danger: #ef4444;
+
+  /* === Technical (示波器风格) === */
+  --grid-line: rgba(255, 255, 255, 0.04);
+  --grid-line-strong: rgba(255, 255, 255, 0.08);
+  --scope-cyan: #5eead4;
+  --scope-amber: #fbbf24;
+
+  /* === 字体 === */
+  --font-display: 'Noto Serif SC', 'Source Han Serif SC', 'STSong', serif;
+  --font-body: 'Noto Sans SC', 'Source Han Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+
+  /* === 间距 === */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+
+  /* === 圆角 === */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
+  --radius-xl: 14px;
+  --radius-pill: 9999px;
+
+  /* === 边框 === */
+  --border-hairline: 1px solid var(--surface-3);
+  --border-brand: 1px solid var(--brand-500);
+
+  /* === 阴影 === */
+  --shadow-panel: 0 1px 0 rgba(255,255,255,0.04) inset, 0 4px 12px rgba(0,0,0,0.3);
+  --shadow-brand-glow: 0 0 24px var(--brand-glow);
+  --shadow-float: 0 8px 32px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.04);
+
+  /* === 动效 === */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out-circ: cubic-bezier(0.85, 0, 0.15, 1);
+  --dur-fast: 150ms;
+  --dur-base: 250ms;
+  --dur-slow: 500ms;
+  --dur-drawer: 420ms;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--surface-0);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+}
+
+/* === 背景网格（被视频覆盖时不可见，抽屉打开时视频区露出） === */
+.bg-grid {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+  background-size: 40px 40px;
+  z-index: 0;
+}
+.bg-grid::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, var(--grid-line-strong) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line-strong) 1px, transparent 1px);
+  background-size: 200px 200px;
+}
+
+/* === App 容器 === */
+.app {
+  position: relative;
+  z-index: 1;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ============================================================
+   视频舞台 — 默认全屏，drawer-open 时压缩到左侧
+   ============================================================ */
+.video-stage {
+  position: absolute;
+  inset: 0;
+  right: 0;
+  background: linear-gradient(135deg, #1c1c20 0%, #131316 50%, #0a0a0b 100%);
+  transition: right var(--dur-drawer) var(--ease-out-expo);
+  overflow: hidden;
+}
+
+/* === 视频画面 — 模拟用户在镜头前（工程师剪影 + 渐变光照） === */
+.video-scene {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 35%, rgba(94, 234, 212, 0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 80% 60% at 50% 70%, rgba(200, 69, 60, 0.08) 0%, transparent 65%),
+    linear-gradient(180deg, #1a1a1f 0%, #14141a 50%, #0e0e12 100%);
+}
+.video-scene::before {
+  /* 人物上半身轮廓剪影 — 模拟用户在镜头前 */
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: 42%;
+  height: 78%;
+  background:
+    radial-gradient(ellipse 22% 14% at 50% 16%, #3a3a42 0%, #2c2c34 60%, transparent 82%),
+    linear-gradient(180deg, transparent 0%, #2c2c34 18%, #1f1f25 60%, #18181d 100%);
+  border-radius: 50% 50% 0 0 / 24% 24% 0 0;
+  filter: blur(0.6px);
+}
+.video-scene::after {
+  /* 眼镜反光提示 + 肩部高光 */
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 40%;
+  transform: translateX(-50%);
+  width: 14%;
+  height: 1.2%;
+  background: linear-gradient(90deg, transparent, rgba(94, 234, 212, 0.55) 30%, rgba(94, 234, 212, 0.55) 70%, transparent);
+  border-radius: 50%;
+  filter: blur(0.6px);
+}
+
+/* === Signature 新①: VAD 边缘光晕（speaking 时视频区四边朱砂红光晕） === */
+.vad-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+  box-shadow:
+    inset 0 0 0 1.5px var(--brand-500),
+    inset 0 0 60px rgba(200, 69, 60, 0.18),
+    inset 0 0 120px rgba(200, 69, 60, 0.10);
+  opacity: 0.85;
+  animation: vad-pulse 1.6s var(--ease-in-out-circ) infinite;
+}
+@keyframes vad-pulse {
+  0%, 100% {
+    box-shadow:
+      inset 0 0 0 1.5px var(--brand-500),
+      inset 0 0 60px rgba(200, 69, 60, 0.18),
+      inset 0 0 120px rgba(200, 69, 60, 0.10);
+  }
+  50% {
+    box-shadow:
+      inset 0 0 0 2px var(--brand-400),
+      inset 0 0 90px rgba(200, 69, 60, 0.30),
+      inset 0 0 180px rgba(200, 69, 60, 0.16);
+  }
+}
+
+/* === Signature 旧①: 取景器四角 L 形角标 === */
+.corner {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-color: var(--brand-500);
+  border-style: solid;
+  border-width: 0;
+  z-index: 5;
+  opacity: 0.9;
+}
+.corner.tl { top: 16px;    left: 16px;    border-top-width: 2px; border-left-width: 2px; }
+.corner.tr { top: 16px;    right: 16px;   border-top-width: 2px; border-right-width: 2px; }
+.corner.bl { bottom: 16px; left: 16px;    border-bottom-width: 2px; border-left-width: 2px; }
+.corner.br { bottom: 16px; right: 16px;   border-bottom-width: 2px; border-right-width: 2px; }
+
+/* === Signature 旧①: 中心十字 hairline === */
+.crosshair {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 44px;
+  height: 44px;
+  z-index: 5;
+  mix-blend-mode: difference;
+  pointer-events: none;
+}
+.crosshair::before,
+.crosshair::after {
+  content: '';
+  position: absolute;
+  background: #ffffff;
+}
+.crosshair::before {
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  transform: translateY(-50%);
+}
+.crosshair::after {
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  transform: translateX(-50%);
+}
+/* 中心点 */
+.crosshair-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 4px;
+  height: 4px;
+  background: var(--brand-500);
+  border-radius: 50%;
+  z-index: 6;
+  box-shadow: 0 0 8px var(--brand-glow);
+}
+
+/* === 角部刻度标记 === */
+.camera-ticks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.12em;
+}
+.camera-ticks .tl, .camera-ticks .tr, .camera-ticks .bl, .camera-ticks .br {
+  position: absolute;
+  opacity: 0.55;
+}
+.camera-ticks .tl { top: 22px; left: 48px; }
+.camera-ticks .tr { top: 22px; right: 48px; }
+.camera-ticks .bl { bottom: 22px; left: 48px; }
+.camera-ticks .br { bottom: 22px; right: 48px; }
+
+/* === 顶部扫描线 — 微弱呼吸 === */
+.scanline {
+  position: absolute;
+  left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--scope-cyan), transparent);
+  opacity: 0.18;
+  z-index: 3;
+  animation: scan 4.5s linear infinite;
+}
+@keyframes scan {
+  0%   { top: 0%; opacity: 0; }
+  10%  { opacity: 0.3; }
+  90%  { opacity: 0.3; }
+  100% { top: 100%; opacity: 0; }
+}
+
+/* === 视频底部水印 === */
+.video-watermark {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.18em;
+  z-index: 5;
+  opacity: 0.5;
+  text-transform: uppercase;
+}
+
+/* ============================================================
+   顶部状态栏 — 浮动胶囊
+   ============================================================ */
+.topbar {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: 10px 18px;
+  background: rgba(19, 19, 22, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-float);
+  z-index: 20;
+  transition: right var(--dur-drawer) var(--ease-out-expo);
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  flex-shrink: 0;
+}
+
+/* === Signature 新②: 通话计时器（● 00:42 JetBrains Mono + 红点呼吸） === */
+.call-timer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--text-primary);
+  letter-spacing: 0.06em;
+}
+.call-timer .timer-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--brand-500);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--brand-glow);
+  animation: pulse-dot 1.2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.82); }
+}
+
+/* 分隔线 */
+.topbar-sep {
+  width: 1px;
+  height: 18px;
+  background: var(--surface-4);
+}
+
+/* === Signature 新③: AI 状态四态指示（IDLE/LISTENING/THINKING/SPEAKING） === */
+.ai-state {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ai-state-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+}
+.ai-state-track {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--surface-3);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+.ai-state-track .seg {
+  color: var(--text-tertiary);
+  padding: 2px 6px;
+  border-radius: var(--radius-pill);
+  transition: all var(--dur-base) var(--ease-out-expo);
+}
+.ai-state-track .seg.active {
+  color: #fff;
+  background: var(--brand-500);
+  box-shadow: 0 0 8px var(--brand-glow);
+  animation: state-pulse 1.6s ease-in-out infinite;
+}
+@keyframes state-pulse {
+  0%, 100% { box-shadow: 0 0 6px var(--brand-glow); }
+  50% { box-shadow: 0 0 12px var(--brand-glow); }
+}
+
+/* === Signature 旧②: 数据读数条 === */
+.readouts {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+.readout {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  letter-spacing: 0.06em;
+}
+.readout .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.dot-connected { background: var(--accent-success); box-shadow: 0 0 6px var(--accent-success); }
+.dot-speaking  { background: var(--brand-500); box-shadow: 0 0 6px var(--brand-glow); animation: pulse-dot 1.2s ease-in-out infinite; }
+.dot-cyan      { background: var(--scope-cyan); box-shadow: 0 0 6px rgba(94, 234, 212, 0.6); }
+.readout .key { color: var(--text-tertiary); }
+.readout .val { color: var(--text-secondary); }
+.readout .val.active { color: var(--scope-cyan); }
+.readout .val.brand  { color: var(--brand-400); }
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-shrink: 0;
+}
+
+/* === [💬] 聊天按钮 — 呼出抽屉 === */
+.chat-toggle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: var(--surface-2);
+  border: 1px solid var(--surface-3);
+  border-radius: var(--radius-pill);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--dur-fast) var(--ease-out-expo);
+  flex-shrink: 0;
+}
+.chat-toggle:hover {
+  background: var(--surface-3);
+  color: var(--text-primary);
+  border-color: var(--surface-4);
+}
+.chat-toggle svg { width: 18px; height: 18px; display: block; }
+.chat-toggle.is-active {
+  background: var(--brand-500);
+  border-color: var(--brand-500);
+  color: #fff;
+  box-shadow: 0 0 12px var(--brand-glow);
+}
+/* 未读小红点 */
+.chat-toggle .unread-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  background: var(--brand-500);
+  border: 1.5px solid var(--surface-1);
+  border-radius: 50%;
+  box-shadow: 0 0 6px var(--brand-glow);
+  animation: pulse-dot 1.2s ease-in-out infinite;
+}
+.chat-toggle.is-active .unread-dot { display: none; }
+
+/* === 首次进入引导提示 === */
+.first-tip {
+  position: absolute;
+  top: 70px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px 8px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--brand-500);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--text-primary);
+  box-shadow: 0 0 16px rgba(200, 69, 60, 0.18);
+  z-index: 21;
+  pointer-events: none;
+}
+.first-tip::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  right: 14px;
+  width: 8px;
+  height: 8px;
+  background: var(--surface-2);
+  border-top: 1px solid var(--brand-500);
+  border-left: 1px solid var(--brand-500);
+  transform: rotate(45deg);
+}
+.first-tip .tip-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--brand-500);
+  border-radius: 50%;
+  animation: pulse-dot 1.2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+body.drawer-open .first-tip { display: none; }
+
+/* ============================================================
+   浮动 AI 字幕条 — 智能显隐
+   ============================================================ */
+.caption-bar {
+  position: absolute;
+  left: 50%;
+  bottom: 108px;
+  transform: translateX(-50%);
+  width: min(800px, calc(100% - 48px));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 20px 16px;
+  background: rgba(19, 19, 22, 0.86);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-left: 2px solid var(--brand-500);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-float);
+  z-index: 18;
+  opacity: 1;
+  transition: opacity var(--dur-base) var(--ease-out-expo), transform var(--dur-base) var(--ease-out-expo);
+  animation: caption-show 600ms var(--ease-out-expo);
+}
+@keyframes caption-show {
+  0%   { opacity: 0; transform: translateX(-50%) translateY(12px); }
+  100% { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+body.drawer-open .caption-bar {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(12px);
+}
+
+.caption-tag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+}
+.caption-tag .role {
+  color: var(--scope-cyan);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.caption-tag .role::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--scope-cyan);
+  border-radius: 50%;
+  box-shadow: 0 0 6px rgba(94, 234, 212, 0.6);
+}
+.caption-tag .streaming-label {
+  color: var(--brand-400);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.caption-tag .streaming-label::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  background: var(--brand-500);
+  border-radius: 50%;
+  animation: pulse-dot 1.2s ease-in-out infinite;
+}
+.caption-tag .time {
+  color: var(--text-tertiary);
+  opacity: 0.7;
+  letter-spacing: 0.06em;
+  margin-left: auto;
+}
+
+.caption-text {
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+/* === Signature 旧③: 流式回复光标（朱砂红方块呼吸） === */
+.cursor {
+  display: inline-block;
+  width: 8px;
+  height: 16px;
+  background: var(--brand-500);
+  vertical-align: text-bottom;
+  margin-left: 3px;
+  margin-bottom: 2px;
+  box-shadow: 0 0 8px var(--brand-glow);
+  animation: cursor-breath 800ms var(--ease-out-expo) infinite;
+}
+@keyframes cursor-breath {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+/* === Signature 新⑤: 用户语音识别字幕（仅 speaking 时） === */
+.asr-subtitle {
+  align-self: flex-end;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.06em;
+  padding: 3px 8px;
+  background: rgba(38, 38, 44, 0.6);
+  border: 1px solid var(--surface-3);
+  border-radius: var(--radius-pill);
+}
+.asr-subtitle .asr-dot {
+  width: 5px;
+  height: 5px;
+  background: var(--scope-cyan);
+  border-radius: 50%;
+  animation: pulse-dot 1.2s ease-in-out infinite;
+}
+.asr-subtitle .asr-label {
+  color: var(--scope-cyan);
+  font-weight: 500;
+}
+.asr-subtitle .asr-text {
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 11px;
+}
+
+/* 字幕条右下角小提示 */
+.caption-hint {
+  position: absolute;
+  right: 14px;
+  bottom: -22px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.1em;
+  opacity: 0.6;
+}
+
+/* ============================================================
+   底部浮动控制条胶囊 — Signature 新④
+   ============================================================ */
+.control-bar {
+  position: absolute;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(19, 19, 22, 0.82);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--brand-500);
+  border-radius: var(--radius-pill);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 16px rgba(200, 69, 60, 0.12);
+  z-index: 19;
+  transition: left var(--dur-drawer) var(--ease-out-expo);
+}
+
+.ctrl-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: var(--surface-2);
+  border: 1px solid var(--surface-3);
+  border-radius: 50%;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--dur-fast) var(--ease-out-expo);
+  flex-shrink: 0;
+}
+.ctrl-btn:hover {
+  background: var(--surface-3);
+  color: var(--text-primary);
+  border-color: var(--surface-4);
+}
+.ctrl-btn svg { width: 20px; height: 20px; display: block; }
+.ctrl-btn.is-on {
+  background: var(--surface-3);
+  color: var(--text-primary);
+  border-color: var(--surface-4);
+}
+.ctrl-btn.is-on .glyph-fill { fill: var(--text-primary); }
+.ctrl-btn.is-off {
+  color: var(--text-tertiary);
+  opacity: 0.5;
+}
+.ctrl-btn.is-off::after {
+  content: '';
+  position: absolute;
+  width: 32px;
+  height: 1.5px;
+  background: var(--brand-500);
+  transform: rotate(-45deg);
+}
+
+/* 挂断按钮 — 朱砂红，与其他按钮间距更大 */
+.ctrl-btn.hangup {
+  background: var(--brand-500);
+  border-color: var(--brand-500);
+  color: #fff;
+  margin-left: 12px;
+  box-shadow: 0 0 12px var(--brand-glow);
+}
+.ctrl-btn.hangup:hover {
+  background: var(--brand-400);
+  border-color: var(--brand-400);
+}
+.ctrl-btn.hangup svg { transform: rotate(135deg); }
+
+.ctrl-sep {
+  width: 1px;
+  height: 24px;
+  background: var(--surface-3);
+  margin: 0 4px;
+}
+
+/* ============================================================
+   右侧抽屉 — 默认隐藏，drawer-open 时滑出
+   ============================================================ */
+.drawer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 40%;
+  background: var(--surface-1);
+  border-left: 1px solid var(--surface-3);
+  box-shadow: -16px 0 48px rgba(0,0,0,0.5);
+  transform: translateX(100%);
+  transition: transform var(--dur-drawer) var(--ease-out-expo), width var(--dur-drawer) var(--ease-out-expo);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+body.drawer-open .drawer {
+  transform: translateX(0);
+}
+
+/* 抽屉顶部装饰条 */
+.drawer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--brand-500) 30%, var(--brand-500) 70%, transparent);
+  opacity: 0.8;
+}
+
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px 14px;
+  border-bottom: var(--border-hairline);
+  flex-shrink: 0;
+}
+.drawer-header .title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.drawer-header .title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 0.12em;
+  color: var(--text-primary);
+}
+.drawer-header .subtitle {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.drawer-header .subtitle::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--scope-cyan);
+  border-radius: 50%;
+  box-shadow: 0 0 6px rgba(94, 234, 212, 0.6);
+}
+
+.drawer-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: var(--surface-2);
+  border: 1px solid var(--surface-3);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--dur-fast) var(--ease-out-expo);
+}
+.drawer-close:hover {
+  background: var(--brand-500);
+  border-color: var(--brand-500);
+  color: #fff;
+}
+.drawer-close svg { width: 14px; height: 14px; }
+
+.drawer-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  border-bottom: var(--border-hairline);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  flex-shrink: 0;
+  background: rgba(28, 28, 32, 0.4);
+}
+.drawer-meta .left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.drawer-meta .meta-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.drawer-meta .meta-item .val {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+.drawer-meta .meta-item .val.cyan  { color: var(--scope-cyan); }
+.drawer-meta .meta-item .val.brand { color: var(--brand-400); }
+
+.drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-height: 0;
+}
+.drawer-body::-webkit-scrollbar { width: 6px; }
+.drawer-body::-webkit-scrollbar-track { background: transparent; }
+.drawer-body::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 3px; }
+.drawer-body::-webkit-scrollbar-thumb:hover { background: var(--surface-4); }
+
+/* === 对话消息 === */
+.msg {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-width: 88%;
+}
+.msg.user { align-self: flex-end; align-items: flex-end; }
+.msg.ai   { align-self: flex-start; align-items: flex-start; }
+.msg.sys  { align-self: center; align-items: stretch; max-width: 80%; }
+
+.msg-tag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+}
+.msg-tag .time {
+  color: var(--text-tertiary);
+  opacity: 0.7;
+  letter-spacing: 0.06em;
+}
+.msg.user .msg-tag .role { color: var(--brand-400); }
+.msg.ai   .msg-tag .role { color: var(--scope-cyan); }
+.msg.sys  .msg-tag .role { color: var(--text-tertiary); }
+
+.msg.user .msg-tag { flex-direction: row-reverse; }
+
+.bubble {
+  padding: 11px 16px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--text-primary);
+  border-radius: var(--radius-lg);
+  position: relative;
+}
+.msg.user .bubble {
+  background: var(--brand-500);
+  color: #fff;
+  border-bottom-right-radius: var(--radius-sm);
+  box-shadow: 0 4px 16px rgba(200, 69, 60, 0.25);
+}
+.msg.ai .bubble {
+  background: var(--surface-2);
+  border: var(--border-hairline);
+  border-bottom-left-radius: var(--radius-sm);
+}
+.msg.sys .bubble {
+  background: rgba(28, 28, 32, 0.6);
+  border: var(--border-hairline);
+  border-left: 2px solid var(--brand-500);
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding: 8px 14px;
+  text-align: center;
+  letter-spacing: 0.06em;
+}
+
+/* 流式光标（抽屉内 AI 消息末尾） */
+.msg.ai.streaming .bubble .cursor {
+  height: 14px;
+}
+
+/* ============================================================
+   响应式 — 平板 sm-md (640-1023)
+   ============================================================ */
+@media (max-width: 1023px) and (min-width: 640px) {
+  .drawer { width: 50%; }
+  body.drawer-open .video-stage { right: 50%; }
+  body.drawer-open .topbar { right: calc(50% + 16px); }
+  body.drawer-open .control-bar { left: calc(50% - 25%); }
+
+  .topbar { padding: 9px 14px; gap: var(--space-3); }
+  .topbar-left { gap: var(--space-4); }
+  .readouts { gap: var(--space-3); font-size: 10px; }
+  .readout .key { display: none; }
+  .ai-state-label { display: none; }
+  .ai-state-track { font-size: 10px; padding: 3px 8px; }
+  .ai-state-track .seg { padding: 2px 4px; }
+  .caption-bar { width: calc(100% - 32px); bottom: 100px; }
+  .first-tip { right: 16px; }
+}
+
+/* ============================================================
+   响应式 — 桌面 lg+ (≥1024)
+   ============================================================ */
+@media (min-width: 1024px) {
+  body.drawer-open .video-stage { right: 40%; }
+  body.drawer-open .topbar { right: calc(40% + 16px); }
+  body.drawer-open .control-bar { left: calc(50% - 20%); }
+}
+
+/* ============================================================
+   响应式 — 手机 xs (<640)
+   ============================================================ */
+@media (max-width: 639px) {
+  .video-stage { right: 0 !important; }
+  body.drawer-open .video-stage { right: 0; }
+  body.drawer-open .topbar { right: 16px; opacity: 0; pointer-events: none; }
+  body.drawer-open .control-bar { opacity: 0; pointer-events: none; }
+  body.drawer-open .caption-bar { opacity: 0; pointer-events: none; }
+
+  .drawer { width: 100%; }
+
+  .topbar {
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    padding: 8px 12px;
+    gap: var(--space-2);
+  }
+  .topbar-left { gap: var(--space-3); }
+  .call-timer { font-size: 13px; gap: 6px; }
+  .call-timer .timer-dot { width: 7px; height: 7px; }
+  .topbar-sep { display: none; }
+
+  .ai-state-label { display: none; }
+  .ai-state-track {
+    font-size: 9px;
+    padding: 3px 6px;
+    gap: 2px;
+  }
+  .ai-state-track .seg { padding: 2px 3px; letter-spacing: 0.04em; }
+  .ai-state-track .seg:not(.active) { display: none; }
+
+  .readouts { display: none; }
+
+  .chat-toggle { width: 36px; height: 36px; }
+  .chat-toggle svg { width: 16px; height: 16px; }
+
+  .first-tip {
+    top: 64px;
+    right: 12px;
+    font-size: 11px;
+    padding: 6px 12px 6px 10px;
+  }
+
+  .caption-bar {
+    bottom: 96px;
+    width: calc(100% - 24px);
+    padding: 12px 16px 14px;
+  }
+  .caption-text { font-size: 14px; }
+  .caption-hint { display: none; }
+
+  .control-bar {
+    bottom: 20px;
+    padding: 6px 10px;
+    gap: 6px;
+  }
+  .ctrl-btn {
+    width: 44px;
+    height: 44px;
+  }
+  .ctrl-btn svg { width: 18px; height: 18px; }
+  .ctrl-btn.hangup { margin-left: 8px; }
+  .ctrl-sep { margin: 0 2px; height: 22px; }
+
+  .corner { width: 18px; height: 18px; }
+  .corner.tl, .corner.tr { top: 12px; }
+  .corner.bl, .corner.br { bottom: 12px; }
+  .corner.tl, .corner.bl { left: 12px; }
+  .corner.tr, .corner.br { right: 12px; }
+  .crosshair { width: 36px; height: 36px; }
+  .camera-ticks { font-size: 9px; }
+  .camera-ticks .tl { top: 16px; left: 38px; }
+  .camera-ticks .tr { top: 16px; right: 38px; }
+  .camera-ticks .bl { bottom: 16px; left: 38px; }
+  .camera-ticks .br { bottom: 16px; right: 38px; }
+  .video-watermark { display: none; }
+
+  .drawer-header { padding: 14px 16px 12px; }
+  .drawer-header .title { font-size: 16px; }
+  .drawer-meta { padding: 8px 16px; font-size: 9px; }
+  .drawer-body { padding: 14px 16px 20px; gap: 14px; }
+  .msg { max-width: 92%; }
+  .bubble { font-size: 13px; padding: 10px 14px; }
+}
+
+/* 横屏手机适配 */
+@media (max-width: 900px) and (max-height: 500px) and (orientation: landscape) {
+  .caption-bar { bottom: 80px; }
+  .control-bar { bottom: 14px; }
+  .topbar { top: 10px; }
+}
+</style>
+</head>
+<body>
+<!-- 背景网格 -->
+<div class="bg-grid"></div>
+
+<div class="app">
+
+  <!-- ============ 视频舞台（默认全屏） ============ -->
+  <div class="video-stage">
+
+    <!-- 模拟视频画面 -->
+    <div class="video-scene"></div>
+    <div class="scanline"></div>
+
+    <!-- Signature 新①: VAD 边缘光晕（speaking 时） -->
+    <div class="vad-glow"></div>
+
+    <!-- Signature 旧①: 取景器四角 L 形 -->
+    <div class="corner tl"></div>
+    <div class="corner tr"></div>
+    <div class="corner bl"></div>
+    <div class="corner br"></div>
+
+    <!-- Signature 旧①: 中心十字 -->
+    <div class="crosshair"></div>
+    <div class="crosshair-dot"></div>
+
+    <!-- 角部刻度标记 -->
+    <div class="camera-ticks">
+      <span class="tl">+00.00</span>
+      <span class="tr">F2.8 · ISO 400</span>
+      <span class="bl">CH·01 VISION</span>
+      <span class="br">1280×720 · 30fps</span>
+    </div>
+
+    <!-- 视频底部水印 -->
+    <div class="video-watermark">XEngineer · Live Capture · 0xA3F2</div>
+
+    <!-- ============ 顶部状态栏 ============ -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <!-- Signature 新②: 通话计时器 -->
+        <div class="call-timer">
+          <span class="timer-dot"></span>
+          <span>00:42</span>
+        </div>
+
+        <div class="topbar-sep"></div>
+
+        <!-- Signature 新③: AI 状态四态指示 -->
+        <div class="ai-state">
+          <span class="ai-state-label">AI</span>
+          <div class="ai-state-track">
+            <span class="seg" data-state="idle">IDLE</span>
+            <span class="seg" data-state="listening">LISTENING</span>
+            <span class="seg" data-state="thinking">THINKING</span>
+            <span class="seg active" data-state="speaking">SPEAKING</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        <!-- Signature 旧②: 数据读数条 -->
+        <div class="readouts">
+          <div class="readout">
+            <span class="dot dot-connected"></span>
+            <span class="key">WS</span>
+            <span class="val active">●</span>
+          </div>
+          <div class="readout">
+            <span class="dot dot-speaking"></span>
+            <span class="key">VAD</span>
+            <span class="val brand">●</span>
+          </div>
+          <div class="readout">
+            <span class="dot dot-cyan"></span>
+            <span class="key">SR</span>
+            <span class="val">24kHz</span>
+          </div>
+          <div class="readout">
+            <span class="key">FW</span>
+            <span class="val">v0.1.0</span>
+          </div>
+        </div>
+
+        <!-- [💬] 聊天按钮（呼出抽屉） -->
+        <button class="chat-toggle" id="chatToggle" type="button" aria-label="查看对话历史">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+          </svg>
+          <span class="unread-dot"></span>
+        </button>
+      </div>
+    </header>
+
+    <!-- 首次进入引导提示 -->
+    <div class="first-tip" id="firstTip">
+      <span class="tip-dot"></span>
+      <span>点击 [💬] 查看对话历史</span>
+    </div>
+
+    <!-- ============ 浮动 AI 字幕条（智能显隐） ============ -->
+    <div class="caption-bar" id="captionBar">
+      <div class="caption-tag">
+        <span class="role">AI · STREAMING</span>
+        <span class="streaming-label">实时字幕</span>
+        <span class="time">14:32:37</span>
+      </div>
+      <div class="caption-text">
+        能听到，你的声音很清晰。请问有什么我可以帮你的？<span class="cursor"></span>
+      </div>
+      <!-- Signature 新⑤: 用户语音识别字幕 -->
+      <div class="asr-subtitle">
+        <span class="asr-dot"></span>
+        <span class="asr-label">ASR</span>
+        <span class="asr-text">好的，那你能听到我说话吗？</span>
+      </div>
+      <span class="caption-hint">点击右上角 [💬] 查看完整对话</span>
+    </div>
+
+    <!-- ============ 底部浮动控制条胶囊 ============ -->
+    <div class="control-bar">
+      <!-- 摄像头开关 -->
+      <button class="ctrl-btn is-on" type="button" aria-label="摄像头">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 7l-7 5 7 5V7z"/>
+          <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+        </svg>
+      </button>
+      <!-- 麦克风 -->
+      <button class="ctrl-btn is-on" type="button" aria-label="麦克风">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          <line x1="12" y1="19" x2="12" y2="23"/>
+          <line x1="8" y1="23" x2="16" y2="23"/>
+        </svg>
+      </button>
+      <!-- 静音 -->
+      <button class="ctrl-btn" type="button" aria-label="静音">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+          <line x1="23" y1="9" x2="17" y2="15"/>
+          <line x1="17" y1="9" x2="23" y2="15"/>
+        </svg>
+      </button>
+      <!-- 截图 -->
+      <button class="ctrl-btn" type="button" aria-label="截图">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+          <circle cx="12" cy="13" r="4"/>
+        </svg>
+      </button>
+
+      <div class="ctrl-sep"></div>
+
+      <!-- 挂断（朱砂红） -->
+      <button class="ctrl-btn hangup" type="button" aria-label="挂断">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"/>
+        </svg>
+      </button>
+    </div>
+
+  </div><!-- /.video-stage -->
+
+  <!-- ============ 右侧抽屉（默认隐藏） ============ -->
+  <aside class="drawer" id="drawer" aria-label="对话历史">
+    <div class="drawer-header">
+      <div class="title-group">
+        <span class="title">对话历史</span>
+        <span class="subtitle">Conversation Log · Stream Decoder</span>
+      </div>
+      <button class="drawer-close" id="drawerClose" type="button" aria-label="关闭抽屉">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="drawer-meta">
+      <div class="left">
+        <div class="meta-item">MSG <span class="val">05</span></div>
+        <div class="meta-item">LAT <span class="val cyan">42ms</span></div>
+        <div class="meta-item">VAD <span class="val brand">SPEAKING</span></div>
+      </div>
+      <div class="meta-item">SESSION <span class="val">0xA3F2</span></div>
+    </div>
+
+    <div class="drawer-body">
+
+      <!-- USER 消息 -->
+      <div class="msg user">
+        <div class="msg-tag">
+          <span class="role">USER</span>
+          <span class="time">14:32:08</span>
+        </div>
+        <div class="bubble">你好，你能看到我吗？</div>
+      </div>
+
+      <!-- AI 已完整回复 -->
+      <div class="msg ai">
+        <div class="msg-tag">
+          <span class="role">AI</span>
+          <span class="time">14:32:11</span>
+        </div>
+        <div class="bubble">是的，我能看到你。你戴着一副金属半框眼镜，身穿深蓝色 T 恤。身后的墙上挂着一幅风景画。</div>
+      </div>
+
+      <!-- SYS 系统消息 -->
+      <div class="msg sys">
+        <div class="msg-tag" style="justify-content:center;">
+          <span class="role">SYS</span>
+          <span class="time">14:32:09</span>
+        </div>
+        <div class="bubble">摄像头已开启 · CAMERA ACTIVATED · 1280×720 @ 30fps</div>
+      </div>
+
+      <!-- USER 第二条消息 -->
+      <div class="msg user">
+        <div class="msg-tag">
+          <span class="role">USER</span>
+          <span class="time">14:32:34</span>
+        </div>
+        <div class="bubble">好的，那你能听到我说话吗？</div>
+      </div>
+
+      <!-- AI 流式回复（含光标） -->
+      <div class="msg ai streaming">
+        <div class="msg-tag">
+          <span class="role">AI · STREAMING</span>
+          <span class="time">14:32:37</span>
+        </div>
+        <div class="bubble">
+          能听到，你的声音很清晰。请问有什么我可以帮你的？<span class="cursor"></span>
+        </div>
+      </div>
+
+    </div>
+  </aside>
+
+</div><!-- /.app -->
+
+<script>
+/* ============================================================
+   极简 JS — 仅切换抽屉打开/关闭状态
+   不引入任何框架，不连真实后端
+   ============================================================ */
+(function() {
+  var body = document.body;
+  var chatToggle = document.getElementById('chatToggle');
+  var drawerClose = document.getElementById('drawerClose');
+  var firstTip = document.getElementById('firstTip');
+
+  function openDrawer() {
+    body.classList.add('drawer-open');
+    if (chatToggle) chatToggle.classList.add('is-active');
+  }
+  function closeDrawer() {
+    body.classList.remove('drawer-open');
+    if (chatToggle) chatToggle.classList.remove('is-active');
+  }
+  function toggleDrawer() {
+    if (body.classList.contains('drawer-open')) {
+      closeDrawer();
+    } else {
+      openDrawer();
+    }
+  }
+
+  if (chatToggle) {
+    chatToggle.addEventListener('click', toggleDrawer);
+  }
+  if (drawerClose) {
+    drawerClose.addEventListener('click', closeDrawer);
+  }
+
+  // 首次进入应用：引导提示淡出
+  // 注：生产环境为 2000ms；mockup 演示用 8000ms 以便截图捕获
+  if (firstTip) {
+    setTimeout(function() {
+      firstTip.style.transition = 'opacity 500ms ease, transform 500ms ease';
+      firstTip.style.opacity = '0';
+      firstTip.style.transform = 'translateY(-8px)';
+      setTimeout(function() {
+        if (firstTip.parentNode) firstTip.parentNode.removeChild(firstTip);
+      }, 600);
+    }, 8000);
+  }
+})();
+</script>
+</body>
+</html>

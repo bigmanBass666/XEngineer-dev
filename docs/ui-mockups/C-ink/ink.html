@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="XEngineer UI Mockup C — 现代东方水墨 / Ink Modernism。东方水墨的留白+笔触+印章美学，AI 的回应像在宣纸上书写。">
+<meta name="theme-color" content="#f5f1e8">
+<meta name="color-scheme" content="light">
+<title>XEngineer · 现代东方水墨 / Ink Modernism — Mockup C</title>
+
+<!-- ============================================================
+     字体引入
+     - Display: LXGW WenKai (霞鹜文楷) via jsDelivr，fallback 思源宋
+     - Body: Noto Sans SC (思源黑体)
+     - Mono: JetBrains Mono
+     ============================================================ -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700;900&family=Noto+Sans+SC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" rel="stylesheet">
+
+<style>
+/* ============================================================
+   Design Tokens — 严格按方案 C 规范
+   ============================================================ */
+:root{
+  /* 颜色 */
+  --ink-black:#1a1d1f;          /* 徽墨，带蓝绿偏移 */
+  --paper:#f5f1e8;              /* 宣纸米 */
+  --seal-red:#c8453c;           /* 印章朱砂 */
+  --distant-mountain:#4a5a6a;   /* 远山黛 */
+  --gold-leaf:#c9a961;          /* 金箔 */
+  --ink-deep:#0d0f10;           /* 浓墨 */
+  --ink-light:#6b6e70;          /* 淡墨 */
+
+  /* 圆角（水墨偏直角） */
+  --radius-sm:0;
+  --radius-md:2px;
+  --radius-lg:4px;
+
+  /* 边框 */
+  --border-ink:1px solid var(--ink-light);
+  --border-paper:1px solid var(--paper);
+
+  /* 字体族 */
+  --font-display:'LXGW WenKai','霞鹜文楷','Noto Serif SC',serif;
+  --font-body:'Noto Sans SC','Source Han Sans SC',-apple-system,BlinkMacSystemFont,sans-serif;
+  --font-mono:'JetBrains Mono','SF Mono',Menlo,monospace;
+
+  /* 宣纸纹理（feTurbulence 噪点 + 淡黄底色） */
+  --paper-noise:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.10 0 0 0 0 0.11 0 0 0 0 0.12 0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ============================================================
+   基础重置
+   ============================================================ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+
+body{
+  font-family:var(--font-body);
+  color:var(--ink-black);
+  background-color:var(--paper);
+  background-image:
+    var(--paper-noise),
+    radial-gradient(ellipse 80% 60% at 20% 0%,rgba(201,169,97,0.06),transparent 60%),
+    radial-gradient(ellipse 70% 50% at 90% 100%,rgba(74,90,106,0.05),transparent 55%);
+  background-size:240px 240px,100% 100%,100% 100%;
+  background-blend-mode:multiply,normal,normal;
+  background-attachment:fixed;
+  overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  font-feature-settings:"palt";
+  line-height:1.6;
+}
+
+/* 全局极淡纸纹叠加层 — opacity 5% */
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  background-image:var(--paper-noise);
+  background-size:300px 300px;
+  opacity:0.05;
+  pointer-events:none;
+  z-index:1;
+  mix-blend-mode:multiply;
+}
+
+/* 远景墨晕（页面右下角一团淡墨晕染） */
+body::after{
+  content:"";
+  position:fixed;
+  right:-200px;
+  bottom:-200px;
+  width:600px;
+  height:600px;
+  background:radial-gradient(circle,rgba(26,29,31,0.06) 0%,rgba(26,29,31,0.03) 40%,transparent 70%);
+  pointer-events:none;
+  z-index:0;
+  filter:blur(20px);
+}
+
+.app{
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+  position:relative;
+  z-index:2;
+}
+
+/* ============================================================
+   Header (h-14 = 56px)
+   - 印章式 Logo (28x28 朱砂方 + 白文 X)
+   - 标题字距 0.2em
+   - 右侧 data readouts
+   ============================================================ */
+.header{
+  height:56px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 28px;
+  background:rgba(245,241,232,0.88);
+  border-bottom:var(--border-ink);
+  backdrop-filter:blur(4px);
+  -webkit-backdrop-filter:blur(4px);
+  position:relative;
+}
+
+/* header 底部细金线点缀 */
+.header::after{
+  content:"";
+  position:absolute;
+  left:28px;
+  right:28px;
+  bottom:-1px;
+  height:1px;
+  background:linear-gradient(90deg,
+    transparent 0%,
+    var(--gold-leaf) 20%,
+    var(--seal-red) 50%,
+    var(--gold-leaf) 80%,
+    transparent 100%);
+  opacity:0.35;
+}
+
+.header-left{display:flex;align-items:center;gap:14px}
+
+/* 印章式 Logo */
+.seal{
+  width:28px;
+  height:28px;
+  background:var(--seal-red);
+  border-radius:var(--radius-md);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:var(--paper);
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:18px;
+  line-height:1;
+  position:relative;
+  box-shadow:
+    inset 0 0 0 1px rgba(245,241,232,0.28),
+    inset 0 0 6px rgba(13,15,16,0.18),
+    0 1px 3px rgba(200,69,60,0.4);
+}
+/* 印章石质磨损感（不规则边 + 高光） */
+.seal::after{
+  content:"";
+  position:absolute;
+  inset:1px;
+  border-radius:var(--radius-md);
+  background:
+    radial-gradient(circle at 30% 30%,transparent 55%,rgba(13,15,16,0.18)),
+    radial-gradient(circle at 70% 75%,transparent 60%,rgba(245,241,232,0.08));
+  pointer-events:none;
+}
+
+.header-title-block{display:flex;flex-direction:column;line-height:1.15}
+.header-title{
+  font-family:var(--font-display);
+  font-weight:700;
+  letter-spacing:0.2em;
+  font-size:18px;
+  color:var(--ink-black);
+}
+.header-subtitle{
+  font-family:var(--font-body);
+  font-size:11px;
+  color:var(--distant-mountain);
+  letter-spacing:0.08em;
+  margin-top:3px;
+  font-weight:400;
+}
+
+.header-right{
+  display:flex;
+  gap:22px;
+  font-family:var(--font-mono);
+  font-size:11px;
+  color:var(--distant-mountain);
+}
+.readout{display:flex;flex-direction:column;align-items:flex-end;line-height:1.3}
+.readout-label{
+  font-size:9px;
+  text-transform:uppercase;
+  letter-spacing:0.14em;
+  opacity:0.7;
+  font-weight:500;
+}
+.readout-value{
+  color:var(--ink-black);
+  font-weight:500;
+  font-size:12px;
+  margin-top:1px;
+  font-variant-numeric:tabular-nums;
+}
+
+/* ============================================================
+   Main — 左右双栏
+   ============================================================ */
+.main{
+  flex:1;
+  display:flex;
+  overflow:hidden;
+  min-height:0;
+}
+
+/* 栏标签（小标） */
+.pane-label{
+  font-family:var(--font-mono);
+  font-size:10px;
+  letter-spacing:0.22em;
+  text-transform:uppercase;
+  color:var(--ink-light);
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-weight:500;
+}
+.pane-label::before{
+  content:"";
+  width:22px;
+  height:1px;
+  background:var(--ink-light);
+  flex-shrink:0;
+}
+
+/* ---- 左栏：Camera ---- */
+.left-pane{
+  width:50%;
+  padding:24px 28px 28px;
+  border-right:var(--border-ink);
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+  background:linear-gradient(180deg,rgba(245,241,232,0.35),rgba(245,241,232,0.1));
+  position:relative;
+}
+
+.camera-frame{
+  position:relative;
+  width:100%;
+  aspect-ratio:4/3;
+  background:linear-gradient(135deg,var(--ink-deep) 0%,var(--ink-black) 60%,#22272a 100%);
+  border-radius:var(--radius-md);
+  overflow:hidden;
+  box-shadow:
+    0 4px 24px rgba(13,15,16,0.3),
+    inset 0 0 0 1px rgba(245,241,232,0.06);
+}
+
+/* 摄像头预览占位（模拟镜头视野） */
+.camera-preview{
+  position:absolute;
+  inset:0;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 45%,
+      rgba(74,90,106,0.45) 0%,
+      rgba(74,90,106,0.2) 35%,
+      rgba(13,15,16,0.7) 75%,
+      var(--ink-deep) 100%),
+    linear-gradient(135deg,rgba(74,90,106,0.18),rgba(13,15,16,0.45));
+}
+.camera-preview::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background-image:var(--paper-noise);
+  background-size:200px 200px;
+  opacity:0.05;
+  mix-blend-mode:overlay;
+}
+
+/* 镜头中心淡十字（取景辅助） */
+.camera-crosshair{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+}
+.camera-crosshair::before,
+.camera-crosshair::after{
+  content:"";
+  position:absolute;
+  background:rgba(245,241,232,0.12);
+}
+.camera-crosshair::before{
+  left:50%;top:38%;bottom:38%;width:1px;transform:translateX(-50%);
+}
+.camera-crosshair::after{
+  top:50%;left:38%;right:38%;height:1px;transform:translateY(-50%);
+}
+
+/* ============================================================
+   4 角墨笔触装饰 — 写意画起笔
+   使用 SVG path：粗→细的笔锋，加起笔点
+   ============================================================ */
+.ink-corner{
+  position:absolute;
+  width:74px;
+  height:74px;
+  pointer-events:none;
+  opacity:0.62;
+  z-index:3;
+}
+.ink-corner.tl{top:-2px;left:-2px}
+.ink-corner.tr{top:-2px;right:-2px;transform:scaleX(-1)}
+.ink-corner.bl{bottom:-2px;left:-2px;transform:scaleY(-1)}
+.ink-corner.br{bottom:-2px;right:-2px;transform:scale(-1,-1)}
+
+/* 摄像头状态文字 */
+.camera-status{
+  position:absolute;
+  bottom:12px;
+  left:14px;
+  font-family:var(--font-mono);
+  font-size:10px;
+  color:rgba(245,241,232,0.6);
+  letter-spacing:0.18em;
+  text-transform:uppercase;
+  z-index:4;
+  display:flex;
+  align-items:center;
+}
+.camera-status .live-dot{
+  display:inline-block;
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:var(--seal-red);
+  margin-right:8px;
+  box-shadow:0 0 6px rgba(200,69,60,0.7);
+  animation:live-pulse 1.6s ease-in-out infinite;
+}
+@keyframes live-pulse{
+  0%,100%{opacity:1;transform:scale(1)}
+  50%{opacity:0.45;transform:scale(0.85)}
+}
+
+/* 摄像头右上角时间戳 */
+.camera-time{
+  position:absolute;
+  top:12px;
+  right:14px;
+  font-family:var(--font-mono);
+  font-size:10px;
+  color:rgba(245,241,232,0.55);
+  letter-spacing:0.15em;
+  z-index:4;
+  font-variant-numeric:tabular-nums;
+}
+
+/* ---- 按钮区 ---- */
+.controls{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:auto;
+  padding-top:4px;
+}
+.btn{
+  font-family:var(--font-body);
+  font-size:13px;
+  font-weight:500;
+  padding:10px 18px;
+  border:var(--border-ink);
+  background:rgba(245,241,232,0.55);
+  color:var(--ink-black);
+  border-radius:var(--radius-md);
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  letter-spacing:0.06em;
+  transition:background 0.2s,border-color 0.2s;
+}
+.btn:hover{background:rgba(245,241,232,0.95);border-color:var(--ink-black)}
+
+.btn-rec{
+  background:var(--seal-red);
+  color:var(--paper);
+  border-color:var(--seal-red);
+  box-shadow:0 1px 4px rgba(200,69,60,0.35);
+}
+.btn-rec:hover{background:#b83c34;border-color:#b83c34}
+.btn-rec .rec-dot{
+  display:inline-block;
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:var(--paper);
+  animation:live-pulse 1.4s ease-in-out infinite;
+}
+
+.btn-icon{
+  display:inline-flex;
+  width:14px;
+  height:14px;
+  align-items:center;
+  justify-content:center;
+}
+
+/* 左栏闲章（"墨"字闲章） */
+.idle-seal{
+  position:absolute;
+  bottom:24px;
+  right:28px;
+  width:38px;
+  height:38px;
+  background:transparent;
+  border:1.5px solid var(--seal-red);
+  color:var(--seal-red);
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:18px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  opacity:0.5;
+  transform:rotate(-4deg);
+  letter-spacing:0;
+  border-radius:var(--radius-md);
+  pointer-events:none;
+}
+.idle-seal::after{
+  content:"";
+  position:absolute;
+  inset:2px;
+  border:0.5px solid var(--seal-red);
+  opacity:0.4;
+  border-radius:var(--radius-md);
+}
+
+/* ---- 右栏：对话流 ---- */
+.right-pane{
+  width:50%;
+  padding:24px 28px 20px;
+  overflow-y:auto;
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+  background:linear-gradient(180deg,rgba(245,241,232,0.18),rgba(245,241,232,0.04));
+  scrollbar-width:thin;
+  scrollbar-color:var(--ink-light) transparent;
+}
+.right-pane::-webkit-scrollbar{width:4px}
+.right-pane::-webkit-scrollbar-track{background:transparent}
+.right-pane::-webkit-scrollbar-thumb{background:var(--ink-light);border-radius:0}
+
+.right-pane .pane-label{align-self:flex-start}
+
+/* 消息条目 */
+.msg{
+  display:flex;
+  flex-direction:column;
+  max-width:86%;
+  animation:msg-in 0.6s ease-out both;
+}
+@keyframes msg-in{
+  from{opacity:0;transform:translateY(8px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+.msg-user{align-self:flex-end;align-items:flex-end}
+.msg-ai{align-self:flex-start;align-items:flex-start}
+.msg-sys{align-self:center;align-items:center;max-width:78%}
+
+.msg-role{
+  font-family:var(--font-mono);
+  font-size:10px;
+  color:var(--distant-mountain);
+  letter-spacing:0.2em;
+  text-transform:uppercase;
+  margin-bottom:6px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-weight:500;
+}
+.msg-role::before{
+  content:"";
+  width:14px;
+  height:1px;
+  background:var(--ink-light);
+}
+.msg-user .msg-role{flex-direction:row-reverse}
+
+/* 消息气泡 */
+.bubble{
+  padding:12px 16px;
+  font-size:14px;
+  line-height:1.75;
+  border-radius:var(--radius-md);
+  letter-spacing:0.02em;
+  word-break:break-word;
+}
+.bubble-user{
+  background:var(--ink-black);
+  color:var(--paper);
+  border-bottom-right-radius:0;
+}
+.bubble-ai{
+  background:rgba(255,255,255,0.55);
+  border:var(--border-ink);
+  color:var(--ink-black);
+  border-bottom-left-radius:0;
+  position:relative;
+}
+.bubble-sys{
+  background:transparent;
+  border:1px dashed var(--ink-light);
+  color:var(--distant-mountain);
+  font-family:var(--font-mono);
+  font-size:11px;
+  padding:8px 14px;
+  letter-spacing:0.1em;
+  border-radius:var(--radius-md);
+}
+
+/* ============================================================
+   AI 气泡底部"落款"印章 — 干支纪年
+   ============================================================ */
+.seal-stamp{
+  align-self:flex-end;
+  margin-top:8px;
+  font-family:var(--font-mono);
+  font-size:10px;
+  color:var(--seal-red);
+  border:1px solid var(--seal-red);
+  padding:3px 10px;
+  letter-spacing:0.14em;
+  background:rgba(200,69,60,0.05);
+  display:flex;
+  align-items:center;
+  gap:7px;
+  border-radius:var(--radius-md);
+  position:relative;
+}
+.seal-stamp::before{
+  content:"";
+  width:5px;
+  height:5px;
+  background:var(--seal-red);
+  display:inline-block;
+  flex-shrink:0;
+}
+.seal-stamp.pending{
+  border-style:dashed;
+  opacity:0.55;
+  background:transparent;
+}
+
+/* ============================================================
+   "顿笔"动效 — 流式回复末尾的小水墨晕染
+   径向渐变从小到大 + opacity 1→0，1.2s 周期
+   ============================================================ */
+.brush-stop{
+  display:inline-block;
+  width:10px;
+  height:10px;
+  margin-left:4px;
+  vertical-align:middle;
+  position:relative;
+  top:-1px;
+}
+.brush-stop::before,
+.brush-stop::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:50%;
+  background:radial-gradient(circle,
+    var(--ink-black) 0%,
+    rgba(26,29,31,0.4) 50%,
+    transparent 100%);
+  animation:brush-stop-anim 1.2s ease-out infinite;
+}
+.brush-stop::after{animation-delay:0.6s}
+@keyframes brush-stop-anim{
+  0%{transform:scale(0.3);opacity:1}
+  100%{transform:scale(2.8);opacity:0}
+}
+
+/* 流式光标（竖线，正在打字时） */
+.stream-cursor{
+  display:inline-block;
+  width:2px;
+  height:14px;
+  background:var(--ink-black);
+  vertical-align:middle;
+  margin-left:2px;
+  animation:cursor-blink 1s steps(2) infinite;
+}
+@keyframes cursor-blink{
+  50%{opacity:0}
+}
+
+/* ============================================================
+   StatusBar (h-9 = 36px)
+   ============================================================ */
+.statusbar{
+  height:36px;
+  display:flex;
+  align-items:center;
+  padding:0 24px;
+  gap:0;
+  background:var(--ink-black);
+  color:var(--paper);
+  font-family:var(--font-mono);
+  font-size:11px;
+  border-top:1px solid var(--ink-deep);
+  letter-spacing:0.1em;
+  overflow-x:auto;
+  scrollbar-width:none;
+}
+.statusbar::-webkit-scrollbar{display:none}
+
+.status-item{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  padding:0 16px;
+  height:100%;
+  white-space:nowrap;
+  flex-shrink:0;
+}
+.status-item:first-child{padding-left:0}
+.status-dot{
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  flex-shrink:0;
+}
+.status-dot.connected{background:#7fb069;box-shadow:0 0 5px rgba(127,176,105,0.6)}
+.status-dot.muted{background:var(--ink-light)}
+.status-dot.idle{background:var(--gold-leaf);box-shadow:0 0 5px rgba(201,169,97,0.5)}
+
+.status-sep{
+  width:1px;
+  height:14px;
+  background:var(--ink-light);
+  opacity:0.45;
+  flex-shrink:0;
+}
+
+.status-version{
+  margin-left:auto;
+  color:var(--ink-light);
+  font-size:10px;
+  letter-spacing:0.12em;
+  padding-right:0;
+}
+.status-version .accent{color:var(--gold-leaf)}
+
+/* ============================================================
+   移动端响应式 (375x812) — 左右栏纵向堆叠
+   ============================================================ */
+@media (max-width:640px){
+  body{overflow:auto}
+  .app{height:auto;min-height:100vh}
+
+  .header{
+    height:50px;
+    padding:0 16px;
+  }
+  .header-title{font-size:15px;letter-spacing:0.14em}
+  .header-subtitle{font-size:10px}
+  .header-right{display:none}
+  .seal{width:24px;height:24px;font-size:15px}
+
+  .main{
+    flex-direction:column;
+    overflow:visible;
+  }
+  .left-pane,.right-pane{
+    width:100%;
+    border-right:none;
+  }
+  .left-pane{
+    border-bottom:var(--border-ink);
+    padding:16px;
+    gap:12px;
+  }
+  .right-pane{
+    padding:16px;
+    overflow:visible;
+    gap:14px;
+  }
+  .controls{margin-top:10px}
+  .idle-seal{display:none}
+  .ink-corner{width:50px;height:50px;opacity:0.5}
+
+  .statusbar{
+    padding:0 12px;
+  }
+  .status-item{padding:0 10px}
+  .status-version{font-size:9px}
+
+  .msg{max-width:94%}
+  .bubble{font-size:13px}
+
+  body::after{width:300px;height:300px;right:-100px;bottom:-100px}
+}
+
+/* ============================================================
+   平板中屏 (768px-1024px) — 微调
+   ============================================================ */
+@media (max-width:1024px) and (min-width:641px){
+  .left-pane,.right-pane{padding:20px 22px}
+  .header-right{gap:14px}
+  .readout-label{font-size:8px}
+  .readout-value{font-size:11px}
+  .header{padding:0 20px}
+  .header-title{font-size:16px}
+  .bubble{font-size:13px}
+}
+
+/* ============================================================
+   减少动效偏好
+   ============================================================ */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    animation-duration:0.01ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:0.01ms !important;
+  }
+  .brush-stop::before,
+  .brush-stop::after{animation:none;opacity:0.4}
+  .live-dot,.rec-dot{animation:none}
+}
+
+/* ============================================================
+   焦点态（键盘可达性）
+   ============================================================ */
+.btn:focus-visible{
+  outline:2px solid var(--seal-red);
+  outline-offset:2px;
+}
+.bubble:focus-visible{
+  outline:1px dashed var(--seal-red);
+  outline-offset:2px;
+}
+
+/* ============================================================
+   小屏打印友好（备用，不在评审流程使用）
+   ============================================================ */
+@media print{
+  body{background:#fff}
+  .statusbar,.controls,.camera-status,.camera-time{display:none}
+  .camera-frame{box-shadow:none}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ========================================================
+       Header — 印章式 Logo + 标题 + Data Readouts
+       ======================================================== -->
+  <header class="header">
+    <div class="header-left">
+      <!-- Signature 1: 印章式 Logo -->
+      <div class="seal" aria-label="印章式 Logo">X</div>
+      <div class="header-title-block">
+        <div class="header-title">XEngineer</div>
+        <div class="header-subtitle">AI 视觉对话助手 · Ink Modernism</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="readout">
+        <span class="readout-label">会话</span>
+        <span class="readout-value">00:03:42</span>
+      </div>
+      <div class="readout">
+        <span class="readout-label">延迟</span>
+        <span class="readout-value">12ms</span>
+      </div>
+      <div class="readout">
+        <span class="readout-label">采样</span>
+        <span class="readout-value">24kHz</span>
+      </div>
+      <div class="readout">
+        <span class="readout-label">模型</span>
+        <span class="readout-value">glm-4.6v</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ========================================================
+       Main — 左右双栏
+       ======================================================== -->
+  <main class="main">
+
+    <!-- ============ 左栏：Camera ============ -->
+    <section class="left-pane">
+      <div class="pane-label">取景 · Camera</div>
+
+      <div class="camera-frame">
+        <div class="camera-preview"></div>
+        <div class="camera-crosshair"></div>
+
+        <!-- Signature 4: 四角墨笔触装饰 -->
+        <svg class="ink-corner tl" viewBox="0 0 74 74" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <!-- 横向笔触（粗→细，模拟起笔后行笔） -->
+          <path d="M2,5 Q14,3 30,5 Q44,7 58,11 L56,15 Q43,11 30,10 Q14,9 3,10 Z" fill="#1a1d1f"/>
+          <!-- 纵向笔触 -->
+          <path d="M5,2 Q4,14 6,30 Q8,44 11,58 L15,56 Q11,44 10,30 Q9,14 10,3 Z" fill="#1a1d1f"/>
+          <!-- 起笔点（浓墨圆点） -->
+          <ellipse cx="4" cy="4" rx="3.8" ry="2.8" fill="#1a1d1f" transform="rotate(-42 4 4)"/>
+          <!-- 飞白（淡墨细丝） -->
+          <path d="M16,16 Q26,22 36,32" stroke="#1a1d1f" stroke-width="0.6" fill="none" opacity="0.5"/>
+        </svg>
+        <svg class="ink-corner tr" viewBox="0 0 74 74" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M2,5 Q14,3 30,5 Q44,7 58,11 L56,15 Q43,11 30,10 Q14,9 3,10 Z" fill="#1a1d1f"/>
+          <path d="M5,2 Q4,14 6,30 Q8,44 11,58 L15,56 Q11,44 10,30 Q9,14 10,3 Z" fill="#1a1d1f"/>
+          <ellipse cx="4" cy="4" rx="3.8" ry="2.8" fill="#1a1d1f" transform="rotate(-42 4 4)"/>
+          <path d="M16,16 Q26,22 36,32" stroke="#1a1d1f" stroke-width="0.6" fill="none" opacity="0.5"/>
+        </svg>
+        <svg class="ink-corner bl" viewBox="0 0 74 74" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M2,5 Q14,3 30,5 Q44,7 58,11 L56,15 Q43,11 30,10 Q14,9 3,10 Z" fill="#1a1d1f"/>
+          <path d="M5,2 Q4,14 6,30 Q8,44 11,58 L15,56 Q11,44 10,30 Q9,14 10,3 Z" fill="#1a1d1f"/>
+          <ellipse cx="4" cy="4" rx="3.8" ry="2.8" fill="#1a1d1f" transform="rotate(-42 4 4)"/>
+          <path d="M16,16 Q26,22 36,32" stroke="#1a1d1f" stroke-width="0.6" fill="none" opacity="0.5"/>
+        </svg>
+        <svg class="ink-corner br" viewBox="0 0 74 74" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M2,5 Q14,3 30,5 Q44,7 58,11 L56,15 Q43,11 30,10 Q14,9 3,10 Z" fill="#1a1d1f"/>
+          <path d="M5,2 Q4,14 6,30 Q8,44 11,58 L15,56 Q11,44 10,30 Q9,14 10,3 Z" fill="#1a1d1f"/>
+          <ellipse cx="4" cy="4" rx="3.8" ry="2.8" fill="#1a1d1f" transform="rotate(-42 4 4)"/>
+          <path d="M16,16 Q26,22 36,32" stroke="#1a1d1f" stroke-width="0.6" fill="none" opacity="0.5"/>
+        </svg>
+
+        <div class="camera-status"><span class="live-dot"></span>REC · 1280×960 · 30fps</div>
+        <div class="camera-time">14:23:07</div>
+      </div>
+
+      <div class="controls">
+        <button class="btn btn-rec" type="button">
+          <span class="rec-dot"></span>开始录音
+        </button>
+        <button class="btn" type="button">
+          <span class="btn-icon">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M2 6 L10 6 M6 2 L6 10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+          </span>
+          发送测试消息
+        </button>
+      </div>
+
+      <!-- 闲章 -->
+      <div class="idle-seal" title="闲章">墨</div>
+    </section>
+
+    <!-- ============ 右栏：对话流 ============ -->
+    <section class="right-pane">
+      <div class="pane-label">笔谈 · Conversation</div>
+
+      <!-- USER 消息 1 -->
+      <div class="msg msg-user">
+        <div class="msg-role">用户 · USER</div>
+        <div class="bubble bubble-user">你好，你能看到我吗？</div>
+      </div>
+
+      <!-- AI 消息 1（已完成 + 落款） -->
+      <div class="msg msg-ai">
+        <div class="msg-role">智答 · AI</div>
+        <div class="bubble bubble-ai">
+          是的，我能看到你。你戴着一副金属半框眼镜，身穿深蓝色圆领 T 恤，背景是一面浅米色的墙，墙上挂着一幅装裱过的水墨小品。
+        </div>
+        <!-- Signature 3: 落款 -->
+        <div class="seal-stamp">甲辰年 · 午时</div>
+      </div>
+
+      <!-- SYS 消息 -->
+      <div class="msg msg-sys">
+        <div class="bubble bubble-sys">SYS · 摄像头已开启，画面采样 30fps · JPEG q=0.6</div>
+      </div>
+
+      <!-- USER 消息 2 -->
+      <div class="msg msg-user">
+        <div class="msg-role">用户 · USER</div>
+        <div class="bubble bubble-user">好的，那你能听到我说话吗？</div>
+      </div>
+
+      <!-- AI 消息 2（已完成 + 落款） -->
+      <div class="msg msg-ai">
+        <div class="msg-role">智答 · AI</div>
+        <div class="bubble bubble-ai">
+          可以，你的声音清晰、节奏自然。我已将你的语音转录为文字：「好的，那你能听到我说话吗？」——你可以继续提问，我会同时结合画面与语音回应你。
+        </div>
+        <div class="seal-stamp">甲辰年 · 午时</div>
+      </div>
+
+      <!-- SYS 消息 -->
+      <div class="msg msg-sys">
+        <div class="bubble bubble-sys">SYS · VAD 触发，截取一帧画面已送达后端</div>
+      </div>
+
+      <!-- USER 消息 3 -->
+      <div class="msg msg-user">
+        <div class="msg-role">用户 · USER</div>
+        <div class="bubble bubble-user">那我现在手里拿的是什么？</div>
+      </div>
+
+      <!-- AI 消息 3（正在流式 + 顿笔动效 + 临时落款） -->
+      <div class="msg msg-ai">
+        <div class="msg-role">智答 · AI · 流式中</div>
+        <div class="bubble bubble-ai">
+          你右手握着一只素白瓷杯，杯口微敞，杯身可见一道极细的青花弦纹；杯中似有茶汤，正冒着极淡的白气。你的左手平放在桌面，腕上戴着一只金属表带的腕表<!-- Signature 2: 顿笔动效 --><span class="brush-stop" aria-label="顿笔中"></span>
+        </div>
+        <div class="seal-stamp pending">书写中 · 待落款</div>
+      </div>
+
+      <!-- 装饰性墨痕分隔（小山水） -->
+      <div style="display:flex;align-items:center;gap:12px;margin:6px 0;opacity:0.5;">
+        <svg width="80" height="14" viewBox="0 0 80 14" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M2,10 Q8,4 14,10 Q20,6 28,10 Q36,3 44,10 Q52,7 60,10 Q68,4 76,10"
+                stroke="#4a5a6a" stroke-width="0.8" fill="none" stroke-linecap="round"/>
+          <circle cx="78" cy="10" r="1" fill="#c9a961"/>
+        </svg>
+        <span style="font-family:var(--font-mono);font-size:9px;color:var(--ink-light);letter-spacing:0.2em;">余墨未尽</span>
+      </div>
+
+      <!-- 提示条（引导下一轮对话） -->
+      <div style="align-self:center;max-width:78%;text-align:center;padding:8px 14px;border:1px dashed var(--ink-light);border-radius:var(--radius-md);font-family:var(--font-mono);font-size:10px;color:var(--distant-mountain);letter-spacing:0.1em;margin-top:4px;">
+        ── 语音输入已就绪，按下「开始录音」继续笔谈 ──
+      </div>
+
+      <!-- 装饰：右栏底部远山墨痕 -->
+      <div style="margin-top:auto;padding-top:8px;opacity:0.35;display:flex;justify-content:center;">
+        <svg width="240" height="28" viewBox="0 0 240 28" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <!-- 远山 -->
+          <path d="M0,24 Q20,14 40,20 Q60,8 80,18 Q100,4 120,16 Q140,10 160,18 Q180,6 200,16 Q220,12 240,20 L240,28 L0,28 Z"
+                fill="#4a5a6a" opacity="0.4"/>
+          <!-- 近山 -->
+          <path d="M0,26 Q30,20 60,24 Q90,18 120,24 Q150,20 180,24 Q210,18 240,24 L240,28 L0,28 Z"
+                fill="#1a1d1f" opacity="0.5"/>
+          <!-- 一只小舟（点景） -->
+          <ellipse cx="200" cy="22" rx="4" ry="1" fill="#c9a961" opacity="0.8"/>
+          <!-- 落款点 -->
+          <circle cx="225" cy="6" r="1.5" fill="#c8453c" opacity="0.7"/>
+        </svg>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- ========================================================
+       StatusBar
+       ======================================================== -->
+  <footer class="statusbar">
+    <div class="status-item">
+      <span class="status-dot connected"></span>已连接
+    </div>
+    <div class="status-sep"></div>
+    <div class="status-item">
+      <span class="status-dot muted"></span>静音
+    </div>
+    <div class="status-sep"></div>
+    <div class="status-item">
+      <span class="status-dot idle"></span>闲置
+    </div>
+    <div class="status-sep"></div>
+    <div class="status-item">24kHz</div>
+    <div class="status-sep"></div>
+    <div class="status-item">PCM · 16kHz</div>
+    <div class="status-sep"></div>
+    <div class="status-item">VAD · Silent</div>
+    <div class="status-version">XEngineer <span class="accent">v0.1.0</span> · Ink Modernism</div>
+  </footer>
+
+</div>
+</body>
+</html>

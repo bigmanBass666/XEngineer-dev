@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>XEngineer · 全屏+浮动字幕 × 暗房 · M8</title>
+
+  <!-- Google Fonts: Cormorant Garamond + Inter + IBM Plex Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Inter:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+    /* ========================================================== */
+    /*  Design Tokens — Darkroom palette                          */
+    /* ========================================================== */
+    :root {
+      /* Colors */
+      --safelight: #7a1f1f;            /* 安全灯红 — 主色 */
+      --safelight-dim: #5a1818;        /* 暗化安全灯红（边框/分隔） */
+      --safelight-bright: #a83232;     /* 高亮安全灯（呼吸峰值） */
+      --dev-black: #0d0a0a;            /* 显影黑，背景 */
+      --dev-black-2: #15110f;          /* 略亮一层（面板背景） */
+      --paper: #f4ead5;                /* 相纸米白，文字 */
+      --paper-soft: rgba(244, 234, 213, 0.85);
+      --paper-dim: rgba(244, 234, 213, 0.55);
+      --silver: #8a8478;               /* 银盐灰 */
+      --silver-dim: rgba(138, 132, 120, 0.45);
+      --developer: #3a2418;            /* 显影液深棕 */
+      --developer-soft: rgba(58, 36, 24, 0.55);
+      --red-glow: rgba(122, 31, 31, 0.25);
+      --velvet: #5c1f1f;               /* 暗红丝绒，挂断按钮 */
+      --velvet-bright: #7a2828;
+      --brass: #b08d57;                /* 黄铜，控制条边框 */
+      --brass-dim: rgba(176, 141, 87, 0.45);
+
+      /* Typography */
+      --font-display: 'Cormorant Garamond', 'Times New Roman', serif;
+      --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+
+      /* Radius — darkroom prefers soft rounded corners */
+      --radius-sm: 2px;
+      --radius-md: 6px;
+      --radius-lg: 12px;
+      --radius-pill: 9999px;
+
+      /* Borders */
+      --border-paper: 1px solid var(--paper);
+      --border-brass: 1px solid var(--brass);
+      --border-hairline: 1px solid rgba(244, 234, 213, 0.10);
+      --border-safelight: 1px solid rgba(122, 31, 31, 0.55);
+
+      /* Spacing */
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-6: 24px;
+      --space-8: 32px;
+
+      /* Easing */
+      --ease-develop: cubic-bezier(0.4, 0, 0.2, 1);
+      --ease-breathe: cubic-bezier(0.45, 0, 0.55, 1);
+    }
+
+    /* ========================================================== */
+    /*  Base                                                      */
+    /* ========================================================== */
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background-color: var(--dev-black);
+      color: var(--paper);
+      font-family: var(--font-body);
+      font-size: 14px;
+      line-height: 1.5;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* ========================================================== */
+    /*  Signature #1 (旧) — Red ambient safelight glow           */
+    /*  radial-gradient from top-left corner                     */
+    /* ========================================================== */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background:
+        radial-gradient(circle at 15% 20%, var(--red-glow), transparent 50%),
+        radial-gradient(circle at 88% 92%, rgba(58, 36, 24, 0.35), transparent 45%);
+    }
+
+    /* Subtle paper grain on top of background — adds tactility */
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.04;
+      background-image:
+        repeating-linear-gradient(0deg, transparent 0 2px, rgba(244, 234, 213, 1) 2px 3px),
+        repeating-linear-gradient(90deg, transparent 0 2px, rgba(244, 234, 213, 1) 2px 3px);
+      mix-blend-mode: overlay;
+    }
+
+    /* ========================================================== */
+    /*  App shell — full-screen video + floating overlays         */
+    /* ========================================================== */
+    .app {
+      position: relative;
+      z-index: 1;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ========================================================== */
+    /*  Video stage — full viewport                               */
+    /* ========================================================== */
+    .video-stage {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: stretch;
+      justify-content: stretch;
+      z-index: 1;
+    }
+
+    /* Video frame fills everything between film strips */
+    .video-frame {
+      flex: 1 1 auto;
+      position: relative;
+      background:
+        radial-gradient(ellipse at 50% 45%, rgba(58, 36, 24, 0.55) 0%, var(--dev-black) 75%),
+        linear-gradient(135deg, #1a1310 0%, #0d0a0a 100%);
+      overflow: hidden;
+    }
+
+    /* -------------------------------------------------------- */
+    /*  Signature #2 (旧) — Film perforations (left & right)   */
+    /*  8 holes per side, 4×4px, silver 30% opacity            */
+    /* -------------------------------------------------------- */
+    .film-strip {
+      flex: 0 0 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 0;
+      background: linear-gradient(180deg, #0a0807 0%, #15110f 50%, #0a0807 100%);
+      border-right: 1px solid rgba(244, 234, 213, 0.05);
+      position: relative;
+      z-index: 2;
+    }
+    .film-strip.right {
+      border-right: none;
+      border-left: 1px solid rgba(244, 234, 213, 0.05);
+    }
+    .film-hole {
+      width: 4px;
+      height: 4px;
+      background: var(--silver);
+      opacity: 0.3;
+      border-radius: 1px;
+    }
+
+    /* Portrait silhouette — simulated user video in the darkroom */
+    .portrait {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.7;
+      filter: contrast(1.05);
+    }
+    .portrait .silhouette-head {
+      position: absolute;
+      top: 18%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 140px;
+      height: 170px;
+      border-radius: 50% 50% 48% 48%;
+      background: radial-gradient(circle at 50% 40%, rgba(244, 234, 213, 0.32) 0%, rgba(138, 132, 120, 0.18) 50%, transparent 80%);
+      filter: blur(2px);
+    }
+    .portrait .silhouette-body {
+      position: absolute;
+      top: 48%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 280px;
+      height: 260px;
+      border-radius: 50% 50% 8% 8% / 60% 60% 8% 8%;
+      background: radial-gradient(ellipse at 50% 30%, rgba(58, 36, 24, 0.92) 0%, rgba(13, 10, 10, 0.7) 70%, transparent 100%);
+      filter: blur(2.5px);
+    }
+    .portrait .glasses {
+      position: absolute;
+      top: 29%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100px;
+      height: 22px;
+      border-top: 1.5px solid rgba(244, 234, 213, 0.6);
+      border-radius: 50% 50% 0 0;
+      box-shadow:
+        22px 0 0 -10px rgba(244, 234, 213, 0.6),
+        -22px 0 0 -10px rgba(244, 234, 213, 0.6);
+      filter: blur(0.6px);
+    }
+    .portrait .shirt-collar {
+      position: absolute;
+      top: 58%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 220px;
+      height: 60px;
+      background: linear-gradient(180deg, rgba(20, 30, 60, 0.4) 0%, rgba(20, 30, 60, 0.0) 100%);
+      filter: blur(3px);
+    }
+
+    /* Camera caption inside video */
+    .camera-caption {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.3em;
+      color: var(--silver);
+      opacity: 0.55;
+      text-transform: uppercase;
+      z-index: 3;
+      pointer-events: none;
+    }
+    .camera-caption .blink {
+      color: var(--safelight);
+      animation: caption-blink 1.6s steps(2, end) infinite;
+    }
+    @keyframes caption-blink {
+      0%, 49%  { opacity: 1; }
+      50%, 100%{ opacity: 0.15; }
+    }
+
+    /* -------------------------------------------------------- */
+    /*  Signature #1 (新) — VAD edge glow when user speaking   */
+    /*  Inset safelight red shadow, breathing 1.2s             */
+    /* -------------------------------------------------------- */
+    .vad-glow {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 4;
+      box-shadow: inset 0 0 80px var(--safelight);
+      animation: vad-breathe 1.2s var(--ease-breathe) infinite;
+    }
+    @keyframes vad-breathe {
+      0%, 100% { box-shadow: inset 0 0 60px rgba(122, 31, 31, 0.45); opacity: 0.7; }
+      50%      { box-shadow: inset 0 0 110px rgba(122, 31, 31, 0.85); opacity: 1; }
+    }
+
+    /* VAD badge — small indicator that user is speaking */
+    .vad-badge {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      background: rgba(13, 10, 10, 0.7);
+      border: 1px solid rgba(122, 31, 31, 0.55);
+      border-radius: var(--radius-pill);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      color: var(--safelight-bright);
+      text-transform: uppercase;
+      opacity: 0;
+      pointer-events: none;
+      animation: badge-pulse 1.2s var(--ease-breathe) infinite;
+    }
+    @keyframes badge-pulse {
+      0%, 100% { opacity: 0.55; transform: translate(-50%, -50%) scale(0.95); }
+      50%      { opacity: 0.9;  transform: translate(-50%, -50%) scale(1.0); }
+    }
+    .vad-badge .wave {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+    }
+    .vad-badge .wave span {
+      display: inline-block;
+      width: 2px;
+      height: 8px;
+      background: var(--safelight-bright);
+      border-radius: 1px;
+      animation: wave-bar 0.9s var(--ease-breathe) infinite;
+    }
+    .vad-badge .wave span:nth-child(2) { animation-delay: 0.15s; }
+    .vad-badge .wave span:nth-child(3) { animation-delay: 0.3s; }
+    .vad-badge .wave span:nth-child(4) { animation-delay: 0.45s; }
+    @keyframes wave-bar {
+      0%, 100% { transform: scaleY(0.5); }
+      50%      { transform: scaleY(1.4); }
+    }
+
+    /* ========================================================== */
+    /*  Top floating status bar                                   */
+    /* ========================================================== */
+    .status-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-4);
+      padding: 14px 32px 14px 32px;
+      background: linear-gradient(180deg,
+        rgba(13, 10, 10, 0.88) 0%,
+        rgba(13, 10, 10, 0.45) 75%,
+        transparent 100%);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    /* Status bar bottom safelight strip */
+    .status-bar::after {
+      content: "";
+      position: absolute;
+      left: 30%;
+      right: 30%;
+      bottom: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--safelight), transparent);
+      opacity: 0.5;
+    }
+
+    .status-left {
+      display: flex;
+      align-items: center;
+      gap: var(--space-6);
+      flex-shrink: 0;
+    }
+    .status-center {
+      flex: 1 1 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-3);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--silver);
+      letter-spacing: 0.08em;
+    }
+    .status-right {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      flex-shrink: 0;
+    }
+
+    /* -------------------------------------------------------- */
+    /*  Signature #2 (新) — Call timer "● DEV 00:42"            */
+    /*  IBM Plex Mono, breathing red dot                        */
+    /* -------------------------------------------------------- */
+    .dev-timer {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      color: var(--paper);
+    }
+    .dev-timer .dev-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--safelight);
+      box-shadow: 0 0 10px var(--safelight);
+      animation: dev-dot-breathe 1.4s var(--ease-breathe) infinite;
+    }
+    @keyframes dev-dot-breathe {
+      0%, 100% { opacity: 0.55; transform: scale(0.92); }
+      50%      { opacity: 1;    transform: scale(1.1); }
+    }
+    .dev-timer .dev-label {
+      color: var(--safelight-bright);
+      letter-spacing: 0.15em;
+    }
+    .dev-timer .dev-time {
+      color: var(--paper);
+    }
+
+    /* -------------------------------------------------------- */
+    /*  Signature #3 (新) — AI 4-state indicator               */
+    /*  暗房语义四态: 待显影 / 曝光中 / 显影中 / 已显影         */
+    /* -------------------------------------------------------- */
+    .ai-state {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 12px;
+      border: var(--border-safelight);
+      border-radius: var(--radius-pill);
+      background: rgba(122, 31, 31, 0.12);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--paper);
+    }
+    .ai-state .state-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--safelight);
+      box-shadow: 0 0 6px var(--safelight);
+      animation: state-pulse 1.8s var(--ease-breathe) infinite;
+    }
+    @keyframes state-pulse {
+      0%, 100% { opacity: 0.55; }
+      50%      { opacity: 1; }
+    }
+    .ai-state .state-label {
+      color: var(--safelight-bright);
+      font-weight: 500;
+    }
+    .ai-state .state-en {
+      color: var(--silver);
+      font-size: 9.5px;
+      letter-spacing: 0.2em;
+      margin-left: 4px;
+      padding-left: 8px;
+      border-left: 1px solid rgba(122, 31, 31, 0.35);
+    }
+
+    /* Connection quality — 4 bars */
+    .conn-quality {
+      display: inline-flex;
+      align-items: flex-end;
+      gap: 2px;
+      height: 12px;
+    }
+    .conn-quality span {
+      width: 3px;
+      background: var(--silver);
+      border-radius: 1px;
+      opacity: 0.9;
+    }
+    .conn-quality span:nth-child(1) { height: 4px; }
+    .conn-quality span:nth-child(2) { height: 6px; }
+    .conn-quality span:nth-child(3) { height: 9px; }
+    .conn-quality span:nth-child(4) { height: 12px; }
+
+    /* Signature #4 (旧) — "显影时间" progress: DEV 12s */
+    .dev-progress {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      letter-spacing: 0.12em;
+      color: var(--silver);
+      text-transform: uppercase;
+    }
+    .dev-progress .prog-label {
+      color: var(--safelight);
+    }
+    .dev-progress .prog-bar {
+      display: inline-block;
+      width: 60px;
+      height: 4px;
+      background: rgba(122, 31, 31, 0.15);
+      border-radius: 2px;
+      position: relative;
+      overflow: hidden;
+    }
+    .dev-progress .prog-bar::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 55%;
+      background: linear-gradient(90deg, var(--safelight-dim), var(--safelight));
+      border-radius: 2px;
+      animation: prog-grow 2.4s var(--ease-breathe) infinite;
+    }
+    @keyframes prog-grow {
+      0%   { width: 25%; }
+      50%  { width: 75%; }
+      100% { width: 95%; }
+    }
+
+    /* History button [💬] with unread red dot */
+    .history-btn {
+      position: relative;
+      width: 38px;
+      height: 38px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(58, 36, 24, 0.55);
+      border: 1px solid rgba(244, 234, 213, 0.18);
+      border-radius: var(--radius-md);
+      color: var(--paper);
+      font-family: var(--font-body);
+      font-size: 17px;
+      cursor: pointer;
+      transition: all 0.2s var(--ease-breathe);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    .history-btn:hover {
+      background: rgba(58, 36, 24, 0.85);
+      border-color: var(--brass);
+      box-shadow: 0 0 14px var(--red-glow);
+    }
+    .history-btn .badge {
+      position: absolute;
+      top: -3px;
+      right: -3px;
+      min-width: 16px;
+      height: 16px;
+      padding: 0 4px;
+      border-radius: 8px;
+      background: var(--safelight);
+      color: var(--paper);
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 8px var(--red-glow);
+      border: 1px solid var(--dev-black);
+    }
+
+    /* ========================================================== */
+    /*  Floating AI subtitle bar (center-bottom)                  */
+    /* ========================================================== */
+    .subtitle-bar {
+      position: absolute;
+      left: 50%;
+      bottom: 130px;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 0 32px;
+      z-index: 15;
+      animation: subtitle-fade-in 0.6s var(--ease-breathe) both;
+    }
+    @keyframes subtitle-fade-in {
+      from { opacity: 0; transform: translate(-50%, 12px); }
+      to   { opacity: 1; transform: translate(-50%, 0); }
+    }
+
+    .subtitle-card {
+      position: relative;
+      padding: 16px 20px 14px;
+      background: rgba(13, 10, 10, 0.7);
+      border: 1px solid rgba(176, 141, 87, 0.35);
+      border-radius: var(--radius-lg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.55),
+        0 0 40px rgba(122, 31, 31, 0.06);
+    }
+
+    /* Header row of subtitle: AI label + status */
+    .subtitle-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .subtitle-head .ai-mark {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--safelight) 0%, var(--safelight-dim) 70%, transparent 100%);
+      color: var(--paper);
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: 12px;
+      letter-spacing: 0.02em;
+    }
+    .subtitle-head .ai-name {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: 15px;
+      letter-spacing: 0.06em;
+      color: var(--paper);
+    }
+    .subtitle-head .ai-state-tag {
+      margin-left: 6px;
+      padding: 2px 8px;
+      background: rgba(122, 31, 31, 0.18);
+      border: 1px solid rgba(122, 31, 31, 0.45);
+      border-radius: var(--radius-pill);
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      letter-spacing: 0.18em;
+      color: var(--safelight-bright);
+      text-transform: uppercase;
+    }
+
+    /* Body text — streaming reply */
+    .subtitle-text {
+      font-family: var(--font-body);
+      font-size: 15.5px;
+      line-height: 1.65;
+      color: var(--paper);
+      letter-spacing: 0.01em;
+    }
+    .subtitle-text .punctuated { color: var(--paper); }
+
+    /* -------------------------------------------------------- */
+    /*  Signature #3 (旧) — Developing animation                */
+    /*  Last few chars stay in mid-develop state                */
+    /* -------------------------------------------------------- */
+    .developing {
+      display: inline-block;
+      filter: blur(8px);
+      opacity: 0.3;
+      animation: develop-in 800ms var(--ease-develop) forwards;
+    }
+    .developing.d1 { animation-delay: 0ms; }
+    .developing.d2 { animation-delay: 240ms; }
+    .developing.d3 { animation-delay: 480ms; }
+    .developing.d4 { animation-delay: 720ms; }
+    @keyframes develop-in {
+      0%   { filter: blur(8px); opacity: 0; }
+      40%  { filter: blur(4px); opacity: 0.6; }
+      100% { filter: blur(0); opacity: 1; }
+    }
+    /* Cursor — breathing red square, marks end of stream */
+    .dev-cursor {
+      display: inline-block;
+      width: 8px;
+      height: 16px;
+      margin-left: 2px;
+      vertical-align: text-bottom;
+      background: var(--safelight-bright);
+      box-shadow: 0 0 8px var(--safelight);
+      animation: cursor-blink 1s steps(2, end) infinite;
+    }
+    @keyframes cursor-blink {
+      0%, 49%  { opacity: 1; }
+      50%, 100%{ opacity: 0.2; }
+    }
+
+    /* Subtitle footer: user voice line + stamp timestamp + hint */
+    .subtitle-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(244, 234, 213, 0.06);
+      flex-wrap: wrap;
+    }
+    .subtitle-foot-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    /* -------------------------------------------------------- */
+    /*  Signature #5 (新) — User voice recognition subtitle    */
+    /*  "● 曝光: 你好，你能看到我吗？" (small, speaking state) */
+    /* -------------------------------------------------------- */
+    .user-voice {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      color: var(--silver);
+      max-width: 100%;
+    }
+    .user-voice .uv-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--safelight);
+      box-shadow: 0 0 6px var(--safelight);
+      flex-shrink: 0;
+    }
+    .user-voice .uv-label {
+      color: var(--safelight-bright);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+    .user-voice .uv-text {
+      color: var(--paper-soft);
+      font-family: var(--font-body);
+      font-size: 12px;
+      letter-spacing: 0.01em;
+    }
+
+    /* -------------------------------------------------------- */
+    /*  Signature #5 (旧) — Stamp-style timestamp              */
+    /*  Red border + mono font + letter-spacing                */
+    /* -------------------------------------------------------- */
+    .stamp {
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      letter-spacing: 0.1em;
+      color: var(--safelight);
+      opacity: 0.9;
+      padding: 2px 6px;
+      border: 1px solid var(--safelight);
+      border-radius: 1px;
+      background: rgba(122, 31, 31, 0.05);
+      display: inline-block;
+      text-transform: uppercase;
+    }
+
+    /* Small hint at right edge of subtitle */
+    .subtitle-hint {
+      position: absolute;
+      right: 16px;
+      bottom: -22px;
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      letter-spacing: 0.12em;
+      color: var(--silver-dim);
+      text-transform: uppercase;
+      opacity: 0.85;
+    }
+    .subtitle-hint .arr {
+      color: var(--safelight);
+      margin-left: 4px;
+    }
+
+    /* ========================================================== */
+    /*  Bottom floating control bar — capsule                     */
+    /* ========================================================== */
+    .control-bar {
+      position: absolute;
+      left: 50%;
+      bottom: 32px;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      background: rgba(45, 24, 16, 0.6);
+      border: var(--border-brass);
+      border-radius: var(--radius-pill);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow:
+        0 8px 28px rgba(0, 0, 0, 0.55),
+        0 0 24px rgba(122, 31, 31, 0.06),
+        inset 0 1px 0 rgba(244, 234, 213, 0.08);
+      z-index: 18;
+      max-width: 480px;
+    }
+    .control-bar::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: -1px;
+      width: 60%;
+      height: 1px;
+      transform: translateX(-50%);
+      background: linear-gradient(90deg, transparent, var(--brass), transparent);
+      opacity: 0.7;
+    }
+
+    .ctrl {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 48px;
+      border: 1px solid rgba(244, 234, 213, 0.10);
+      border-radius: 50%;
+      background: rgba(13, 10, 10, 0.55);
+      color: var(--paper);
+      font-size: 18px;
+      cursor: pointer;
+      transition: all 0.2s var(--ease-breathe);
+      position: relative;
+    }
+    .ctrl:hover {
+      background: rgba(58, 36, 24, 0.75);
+      border-color: var(--brass);
+      box-shadow: 0 0 12px var(--red-glow);
+      transform: translateY(-1px);
+    }
+    .ctrl .label {
+      position: absolute;
+      bottom: -22px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      color: var(--silver-dim);
+      text-transform: uppercase;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    .ctrl:hover .label { opacity: 1; }
+
+    /* Active mic state — recording pulse */
+    .ctrl.mic-active {
+      border-color: var(--safelight);
+      box-shadow: 0 0 14px var(--red-glow);
+    }
+    .ctrl.mic-active::after {
+      content: "";
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      border: 1px solid var(--safelight);
+      opacity: 0.5;
+      animation: mic-pulse 1.4s var(--ease-breathe) infinite;
+    }
+    @keyframes mic-pulse {
+      0%, 100% { transform: scale(1); opacity: 0.5; }
+      50%      { transform: scale(1.15); opacity: 0; }
+    }
+
+    /* End call button — velvet red, slightly larger */
+    .ctrl.end {
+      width: 56px;
+      height: 56px;
+      margin-left: 6px;
+      background: linear-gradient(180deg, var(--velvet-bright), var(--velvet));
+      border: 1px solid var(--safelight-bright);
+      box-shadow: 0 0 16px rgba(122, 31, 31, 0.45);
+      color: var(--paper);
+      font-size: 20px;
+    }
+    .ctrl.end:hover {
+      background: linear-gradient(180deg, #8a2a2a, var(--velvet-bright));
+      box-shadow: 0 0 22px rgba(122, 31, 31, 0.7);
+    }
+
+    /* ========================================================== */
+    /*  First-time onboarding tip                                 */
+    /* ========================================================== */
+    .onboarding {
+      position: absolute;
+      top: 80px;
+      right: 32px;
+      z-index: 25;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      background: rgba(58, 36, 24, 0.92);
+      border: 1px solid var(--brass);
+      border-radius: var(--radius-md);
+      color: var(--paper);
+      font-family: var(--font-body);
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5), 0 0 18px var(--red-glow);
+      animation: onboarding-pulse 2s var(--ease-breathe) infinite;
+    }
+    @keyframes onboarding-pulse {
+      0%, 100% { box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5), 0 0 12px var(--red-glow); }
+      50%      { box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5), 0 0 22px var(--red-glow); }
+    }
+    .onboarding .ob-icon {
+      width: 22px;
+      height: 22px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--brass);
+      border-radius: var(--radius-sm);
+      background: rgba(176, 141, 87, 0.18);
+      color: var(--brass);
+      font-size: 12px;
+    }
+    .onboarding::after {
+      content: "";
+      position: absolute;
+      bottom: -7px;
+      right: 18px;
+      width: 0;
+      height: 0;
+      border-left: 7px solid transparent;
+      border-right: 7px solid transparent;
+      border-top: 7px solid var(--brass);
+    }
+
+    /* ========================================================== */
+    /*  Responsive — 3 breakpoints                                */
+    /*  xs (<640) / sm-md (640-1023) / lg+ (≥1024)               */
+    /* ========================================================== */
+
+    /* ---------- lg+ (default desktop) ---------- */
+    /* status bar: 双行数据读数; subtitle: max-width 800px居中; control: max-width 480px居中 */
+
+    /* ---------- sm-md (640-1023) ---------- */
+    @media (max-width: 1023px) {
+      .status-bar { padding: 12px 20px; }
+      .subtitle-bar { padding: 0 20px; bottom: 120px; }
+      .subtitle-text { font-size: 14.5px; }
+      .control-bar {
+        bottom: 24px;
+        gap: 6px;
+        padding: 9px 12px;
+      }
+      .ctrl { width: 46px; height: 46px; font-size: 17px; }
+      .ctrl.end { width: 52px; height: 52px; }
+      .dev-progress { display: none; } /* hide DEV 12s on smaller */
+    }
+
+    /* ---------- xs (<640) ---------- */
+    @media (max-width: 639px) {
+      .status-bar {
+        padding: 10px 14px;
+        gap: 8px;
+      }
+      .status-center { display: none; } /* hide connection quality on xs */
+      .status-left { gap: 10px; }
+      .dev-timer { font-size: 12px; }
+      .ai-state {
+        font-size: 10px;
+        padding: 4px 9px;
+        letter-spacing: 0.12em;
+      }
+      .ai-state .state-en { display: none; }
+      .history-btn { width: 34px; height: 34px; font-size: 15px; }
+
+      .subtitle-bar {
+        bottom: 110px;
+        padding: 0 12px;
+      }
+      .subtitle-card { padding: 12px 14px 10px; }
+      .subtitle-text { font-size: 13.5px; line-height: 1.55; }
+      .subtitle-head .ai-name { font-size: 13px; }
+
+      .control-bar {
+        bottom: 18px;
+        gap: 5px;
+        padding: 8px 10px;
+        max-width: calc(100% - 24px);
+      }
+      .ctrl { width: 44px; height: 44px; font-size: 16px; }
+      .ctrl.end { width: 50px; height: 50px; font-size: 18px; }
+      .ctrl .label { display: none; }
+
+      .onboarding {
+        top: 70px;
+        right: 14px;
+        font-size: 11px;
+        padding: 6px 10px;
+      }
+      .onboarding .ob-icon { width: 18px; height: 18px; font-size: 10px; }
+
+      .subtitle-hint { display: none; }
+    }
+
+    /* Hide film strips on xs to give video max width */
+    @media (max-width: 480px) {
+      .film-strip { flex-basis: 14px; padding: 10px 0; }
+      .film-hole { width: 3px; height: 3px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+
+    <!-- ============== Video stage (full viewport) ============== -->
+    <section class="video-stage" aria-label="用户视频画面">
+      <!-- Left film perforation strip -->
+      <div class="film-strip left" aria-hidden="true">
+        <span class="film-hole"></span>
+        <span class="film-hole"></span>
+        <span class="film-hole"></span>
+        <span class="film-hole"></span>
+        <span class="film-hole"></span>
+        <span class="film-hole"></span>
+        <span class="film-hole"></span>
+        <span class="film-hole"></span>
+      </div>
+
+      <!-- Video frame -->
+      <div class="video-frame">
+        <!-- Simulated portrait silhouette in the darkroom -->
+        <div class="portrait" aria-hidden="true">
+          <div class="silhouette-body"></div>
+          <div class="silhouette-head"></div>
+          <div class="glasses"></div>
+          <div class="shirt-collar"></div>
+        </div>
+
+        <!-- VAD edge glow (speaking state) -->
+        <div class="vad-glow" aria-hidden="true"></div>
+
+        <!-- VAD speaking badge (center indicator) -->
+        <div class="vad-badge" aria-hidden="true">
+          <span>曝光中</span>
+          <span class="wave">
+            <span></span><span></span><span></span><span></span>
+          </span>
+        </div>
+
+        <!-- Camera caption -->
+        <div class="camera-caption">
+          DEVELOPING · 35MM · F2.8 · <span class="blink">REC</span>
+        </div>
+      </div>
+
+      <!-- Right film perforation strip -->
+      <div class="film-strip right" aria-hidden="true">
+        <span class="film-hole"></span>
+        <span class="film-hole"></span>
+        <span class="film-hole"></span>
+        <span class="film-hole"></span>
+        <span class="film-hole"></span>
+        <span class="film-hole"></span>
+        <span class="film-hole"></span>
+        <span class="film-hole"></span>
+      </div>
+    </section>
+
+    <!-- ============== Top floating status bar ============== -->
+    <header class="status-bar">
+      <div class="status-left">
+        <!-- Signature #2 (新): ● DEV 00:42 call timer -->
+        <span class="dev-timer" aria-label="通话计时">
+          <span class="dev-dot"></span>
+          <span class="dev-label">DEV</span>
+          <span class="dev-time">00:42</span>
+        </span>
+
+        <!-- Signature #3 (新): AI 4-state indicator (显影中 = THINKING) -->
+        <span class="ai-state" aria-label="AI 状态">
+          <span class="state-dot"></span>
+          <span class="state-label">显影中</span>
+          <span class="state-en">DEVELOPING</span>
+        </span>
+      </div>
+
+      <div class="status-center">
+        <!-- Connection quality + DEV progress (signature #4 旧) -->
+        <span class="conn-quality" aria-label="连接良好">
+          <span></span><span></span><span></span><span></span>
+        </span>
+        <span>连接良好</span>
+        <span class="dev-progress" aria-label="显影时间">
+          <span class="prog-label">DEV 12s</span>
+          <span class="prog-bar"></span>
+        </span>
+      </div>
+
+      <div class="status-right">
+        <!-- History button with unread red dot -->
+        <button class="history-btn" type="button" aria-label="查看对话历史">
+          <span aria-hidden="true">💬</span>
+          <span class="badge">2</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ============== Floating AI subtitle bar ============== -->
+    <div class="subtitle-bar" role="region" aria-label="AI 字幕">
+      <div class="subtitle-card">
+        <div class="subtitle-head">
+          <span class="ai-mark" aria-hidden="true">AI</span>
+          <span class="ai-name">显影师</span>
+          <span class="ai-state-tag">显影中</span>
+        </div>
+
+        <div class="subtitle-text">
+          <span>能听到，你的声音很清晰。请问有什么我可以帮你的</span><span class="developing d1">？</span><span class="dev-cursor" aria-hidden="true"></span>
+        </div>
+
+        <div class="subtitle-foot">
+          <div class="subtitle-foot-left">
+            <!-- Signature #5 (新): user voice recognition subtitle -->
+            <span class="user-voice" aria-label="用户语音识别">
+              <span class="uv-dot"></span>
+              <span class="uv-label">曝光:</span>
+              <span class="uv-text">好的，那你能听到我说话吗？</span>
+            </span>
+          </div>
+          <!-- Signature #5 (旧): stamp-style timestamp -->
+          <span class="stamp">00:42</span>
+        </div>
+
+        <!-- "点击查看完整对话" hint -->
+        <span class="subtitle-hint">
+          点击查看完整对话 <span class="arr">→</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- ============== Bottom floating control bar (capsule) ============== -->
+    <footer class="control-bar" role="toolbar" aria-label="通话控制">
+      <button class="ctrl" type="button" aria-label="摄像头开关">
+        <span aria-hidden="true">📹</span>
+        <span class="label">CAM</span>
+      </button>
+      <button class="ctrl mic-active" type="button" aria-label="麦克风">
+        <span aria-hidden="true">🎤</span>
+        <span class="label">MIC</span>
+      </button>
+      <button class="ctrl" type="button" aria-label="静音">
+        <span aria-hidden="true">🔇</span>
+        <span class="label">MUTE</span>
+      </button>
+      <button class="ctrl" type="button" aria-label="截图">
+        <span aria-hidden="true">📷</span>
+        <span class="label">SNAP</span>
+      </button>
+      <button class="ctrl end" type="button" aria-label="挂断">
+        <span aria-hidden="true">⏹</span>
+        <span class="label">END</span>
+      </button>
+    </footer>
+
+    <!-- ============== First-time onboarding tip ============== -->
+    <div class="onboarding" role="status">
+      <span class="ob-icon" aria-hidden="true">💬</span>
+      <span>点击 [💬] 查看对话历史</span>
+    </div>
+
+  </main>
+</body>
+</html>
