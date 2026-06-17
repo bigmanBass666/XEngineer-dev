@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XEngineer — Oscilloscope Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* =====================================================================
+   XEngineer · Mockup A — Oscilloscope
+   单文件静态 mockup · 仅供视觉评审 · 不连真实后端 · 不调 getUserMedia
+   ===================================================================== */
+
+:root {
+  /* === Surface (工程灰梯度) === */
+  --surface-0: #0a0a0b;
+  --surface-1: #131316;
+  --surface-2: #1c1c20;
+  --surface-3: #26262c;
+  --surface-4: #34343c;
+
+  /* === Text === */
+  --text-primary: #f5f5f7;
+  --text-secondary: #a1a1a8;
+  --text-tertiary: #6b6b73;
+  --text-inverse: #0a0a0b;
+
+  /* === Brand (朱砂红 — signature) === */
+  --brand-500: #c8453c;
+  --brand-400: #d65a52;
+  --brand-600: #a83a32;
+  --brand-glow: rgba(200, 69, 60, 0.35);
+
+  /* === Functional === */
+  --accent-success: #4ade80;
+  --accent-warning: #fbbf24;
+  --accent-danger: #ef4444;
+
+  /* === Technical (示波器风格) === */
+  --grid-line: rgba(255, 255, 255, 0.04);
+  --grid-line-strong: rgba(255, 255, 255, 0.08);
+  --scope-cyan: #5eead4;
+  --scope-amber: #fbbf24;
+
+  /* === 字体 === */
+  --font-display: 'Noto Serif SC', 'Source Han Serif SC', 'STSong', serif;
+  --font-body: 'Noto Sans SC', 'Source Han Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+
+  /* === 间距 === */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+
+  /* === 圆角 === */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
+  --radius-pill: 9999px;
+
+  /* === 边框 === */
+  --border-hairline: 1px solid var(--surface-3);
+  --border-brand: 1px solid var(--brand-500);
+
+  /* === 阴影 === */
+  --shadow-panel: 0 1px 0 rgba(255,255,255,0.04) inset, 0 4px 12px rgba(0,0,0,0.3);
+  --shadow-brand-glow: 0 0 24px var(--brand-glow);
+
+  /* === 动效 === */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 150ms;
+  --dur-base: 250ms;
+  --dur-slow: 500ms;
+  --dur-sig: 1200ms;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--surface-0);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+}
+
+/* === 背景网格 — signature 元素 #5 === */
+.bg-grid {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+  background-size: 40px 40px;
+  z-index: 0;
+}
+.bg-grid::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, var(--grid-line-strong) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line-strong) 1px, transparent 1px);
+  background-size: 200px 200px;
+}
+
+/* === App 容器 === */
+.app {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: var(--space-3);
+  gap: var(--space-3);
+}
+
+/* === Header — h-14 (56px) === */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 var(--space-6);
+  background: var(--surface-1);
+  border: var(--border-hairline);
+  border-radius: var(--radius-lg);
+  position: relative;
+  flex-shrink: 0;
+}
+.header::after {
+  /* header 底部中央朱砂红渐变线 — H4 装饰 */
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 30%;
+  right: 30%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--brand-500) 50%, transparent);
+  opacity: 0.7;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* Logo — 朱砂红取景框 SVG + 内嵌十字 */
+.logo-mark {
+  width: 28px;
+  height: 28px;
+  position: relative;
+  flex-shrink: 0;
+}
+.logo-mark svg { width: 100%; height: 100%; display: block; }
+
+.logo-title {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  line-height: 1.1;
+}
+.logo-title .name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: 0.15em;
+  color: var(--text-primary);
+}
+.logo-title .sub {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+/* === 数据读数条 — signature 元素 #3 === */
+.readouts {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+.readout {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  letter-spacing: 0.04em;
+}
+.readout .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.dot-connected { background: var(--accent-success); box-shadow: 0 0 6px var(--accent-success); }
+.dot-silent    { background: var(--text-tertiary); }
+.dot-speaking  { background: var(--brand-500); box-shadow: 0 0 6px var(--brand-glow); animation: pulse-dot 1.2s ease-in-out infinite; }
+.dot-idle      { background: var(--text-tertiary); }
+
+.readout .key { color: var(--text-tertiary); }
+.readout .val { color: var(--text-secondary); }
+.readout .val.active { color: var(--scope-cyan); }
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+/* === Main 双栏 === */
+.main {
+  display: flex;
+  flex: 1;
+  gap: var(--space-3);
+  min-height: 0;
+}
+
+/* 左栏 */
+.col-left {
+  width: 460px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-height: 0;
+}
+
+/* 右栏 */
+.col-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--surface-1);
+  border: var(--border-hairline);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+/* === Camera 容器 — 取景器十字线 === */
+.camera-panel {
+  background: var(--surface-1);
+  border: var(--border-hairline);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+  flex-shrink: 0;
+}
+
+.camera-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+}
+.camera-header .channel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.camera-header .channel::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--brand-500);
+  border-radius: 50%;
+  box-shadow: 0 0 6px var(--brand-glow);
+}
+.camera-header .meta { color: var(--text-tertiary); }
+
+.camera-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: linear-gradient(135deg, #2a2a30 0%, #1c1c20 50%, #15151a 100%);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+/* Camera 内部模拟画面 — 工程师剪影 + 渐变光照 */
+.camera-scene {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(94, 234, 212, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 60%, rgba(200, 69, 60, 0.10) 0%, transparent 60%);
+}
+.camera-scene::before {
+  /* 人物轮廓剪影 — 模拟用户在镜头前 */
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: 36%;
+  height: 78%;
+  background:
+    radial-gradient(ellipse 36% 22% at 50% 18%, #3a3a42 0%, #2c2c34 60%, transparent 80%),
+    linear-gradient(180deg, transparent 0%, #2c2c34 22%, #1f1f25 100%);
+  border-radius: 50% 50% 0 0 / 28% 28% 0 0;
+  filter: blur(0.4px);
+}
+.camera-scene::after {
+  /* 眼镜反光提示 */
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 36%;
+  transform: translateX(-50%);
+  width: 14%;
+  height: 1.5%;
+  background: linear-gradient(90deg, transparent, rgba(94, 234, 212, 0.6) 30%, rgba(94, 234, 212, 0.6) 70%, transparent);
+  border-radius: 50%;
+  filter: blur(0.5px);
+}
+
+/* === Signature #1: 取景器四角 L 形角标 === */
+.corner {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-color: var(--brand-500);
+  border-style: solid;
+  border-width: 0;
+  z-index: 3;
+}
+.corner.tl { top: 8px;    left: 8px;    border-top-width: 1.5px; border-left-width: 1.5px; }
+.corner.tr { top: 8px;    right: 8px;   border-top-width: 1.5px; border-right-width: 1.5px; }
+.corner.bl { bottom: 8px; left: 8px;    border-bottom-width: 1.5px; border-left-width: 1.5px; }
+.corner.br { bottom: 8px; right: 8px;   border-bottom-width: 1.5px; border-right-width: 1.5px; }
+
+/* === Signature #1: 中心十字 hairline === */
+.crosshair {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 28px;
+  height: 28px;
+  z-index: 3;
+  mix-blend-mode: difference;
+  pointer-events: none;
+}
+.crosshair::before,
+.crosshair::after {
+  content: '';
+  position: absolute;
+  background: #ffffff;
+}
+.crosshair::before { /* 水平 */
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  transform: translateY(-50%);
+}
+.crosshair::after { /* 垂直 */
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  transform: translateX(-50%);
+}
+
+/* Camera 角部刻度标记 */
+.camera-ticks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.1em;
+}
+.camera-ticks .tl, .camera-ticks .br {
+  position: absolute;
+  opacity: 0.6;
+}
+.camera-ticks .tl { top: 10px; left: 28px; }
+.camera-ticks .br { bottom: 10px; right: 28px; }
+
+/* Camera 顶部扫描线 — 微弱呼吸 */
+.scanline {
+  position: absolute;
+  left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--scope-cyan), transparent);
+  opacity: 0.25;
+  z-index: 2;
+  animation: scan 3.5s linear infinite;
+}
+@keyframes scan {
+  0%   { top: 0%; opacity: 0; }
+  10%  { opacity: 0.4; }
+  90%  { opacity: 0.4; }
+  100% { top: 100%; opacity: 0; }
+}
+
+/* Camera 底部状态栏 */
+.camera-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.12em;
+}
+.camera-foot .live {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--brand-400);
+}
+.camera-foot .live::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--brand-500);
+  border-radius: 50%;
+  animation: pulse-dot 1.2s ease-in-out infinite;
+}
+
+/* === 示波器面板 — Signature #2 === */
+.scope-panel {
+  background: var(--surface-1);
+  border: var(--border-hairline);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+  flex-shrink: 0;
+}
+
+.scope-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+}
+.scope-header .label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.scope-header .label::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--scope-cyan);
+  border-radius: 50%;
+  box-shadow: 0 0 6px rgba(94, 234, 212, 0.6);
+}
+.scope-header .scale { color: var(--text-tertiary); }
+.scope-header .scale b { color: var(--scope-cyan); font-weight: 500; }
+
+/* 32 根条形柱波形 — speaking 状态 */
+.scope-bars {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 48px;
+  padding: 0 2px;
+  gap: 2px;
+  position: relative;
+}
+.scope-bars::before {
+  /* 0dB 基线 */
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: var(--grid-line-strong);
+}
+.bar {
+  flex: 1;
+  min-width: 2px;
+  max-width: 3px;
+  background: var(--brand-500);
+  border-radius: 1px;
+  align-self: center;
+  box-shadow: 0 0 4px rgba(200, 69, 60, 0.4);
+  /* 每根柱子有不同的 keyframe 模拟 RMS 能量 */
+}
+
+/* 为 32 根柱子各自赋予 animation — speaking 状态波动 */
+.bar:nth-child(1)  { animation: rms-bar 480ms var(--ease-out-expo) infinite alternate; --h-min: 8px;  --h-max: 34px; animation-delay: -0ms; }
+.bar:nth-child(2)  { animation: rms-bar 520ms var(--ease-out-expo) infinite alternate; --h-min: 6px;  --h-max: 28px; animation-delay: -40ms; }
+.bar:nth-child(3)  { animation: rms-bar 460ms var(--ease-out-expo) infinite alternate; --h-min: 10px; --h-max: 42px; animation-delay: -80ms; }
+.bar:nth-child(4)  { animation: rms-bar 500ms var(--ease-out-expo) infinite alternate; --h-min: 8px;  --h-max: 36px; animation-delay: -120ms; }
+.bar:nth-child(5)  { animation: rms-bar 540ms var(--ease-out-expo) infinite alternate; --h-min: 6px;  --h-max: 30px; animation-delay: -160ms; }
+.bar:nth-child(6)  { animation: rms-bar 480ms var(--ease-out-expo) infinite alternate; --h-min: 12px; --h-max: 44px; animation-delay: -200ms; }
+.bar:nth-child(7)  { animation: rms-bar 460ms var(--ease-out-expo) infinite alternate; --h-min: 8px;  --h-max: 38px; animation-delay: -240ms; }
+.bar:nth-child(8)  { animation: rms-bar 520ms var(--ease-out-expo) infinite alternate; --h-min: 10px; --h-max: 32px; animation-delay: -280ms; }
+.bar:nth-child(9)  { animation: rms-bar 500ms var(--ease-out-expo) infinite alternate; --h-min: 6px;  --h-max: 40px; animation-delay: -320ms; }
+.bar:nth-child(10) { animation: rms-bar 540ms var(--ease-out-expo) infinite alternate; --h-min: 8px;  --h-max: 26px; animation-delay: -360ms; }
+.bar:nth-child(11) { animation: rms-bar 480ms var(--ease-out-expo) infinite alternate; --h-min: 10px; --h-max: 38px; animation-delay: -400ms; }
+.bar:nth-child(12) { animation: rms-bar 460ms var(--ease-out-expo) infinite alternate; --h-min: 6px;  --h-max: 32px; animation-delay: -440ms; }
+.bar:nth-child(13) { animation: rms-bar 520ms var(--ease-out-expo) infinite alternate; --h-min: 12px; --h-max: 42px; animation-delay: -480ms; }
+.bar:nth-child(14) { animation: rms-bar 500ms var(--ease-out-expo) infinite alternate; --h-min: 8px;  --h-max: 30px; animation-delay: -520ms; }
+.bar:nth-child(15) { animation: rms-bar 540ms var(--ease-out-expo) infinite alternate; --h-min: 10px; --h-max: 36px; animation-delay: -560ms; }
+.bar:nth-child(16) { animation: rms-bar 480ms var(--ease-out-expo) infinite alternate; --h-min: 6px;  --h-max: 40px; animation-delay: -600ms; }
+.bar:nth-child(17) { animation: rms-bar 460ms var(--ease-out-expo) infinite alternate; --h-min: 8px;  --h-max: 28px; animation-delay: -640ms; }
+.bar:nth-child(18) { animation: rms-bar 520ms var(--ease-out-expo) infinite alternate; --h-min: 10px; --h-max: 38px; animation-delay: -680ms; }
+.bar:nth-child(19) { animation: rms-bar 500ms var(--ease-out-expo) infinite alternate; --h-min: 6px;  --h-max: 34px; animation-delay: -720ms; }
+.bar:nth-child(20) { animation: rms-bar 540ms var(--ease-out-expo) infinite alternate; --h-min: 12px; --h-max: 44px; animation-delay: -760ms; }
+.bar:nth-child(21) { animation: rms-bar 480ms var(--ease-out-expo) infinite alternate; --h-min: 8px;  --h-max: 32px; animation-delay: -800ms; }
+.bar:nth-child(22) { animation: rms-bar 460ms var(--ease-out-expo) infinite alternate; --h-min: 10px; --h-max: 26px; animation-delay: -840ms; }
+.bar:nth-child(23) { animation: rms-bar 520ms var(--ease-out-expo) infinite alternate; --h-min: 6px;  --h-max: 40px; animation-delay: -880ms; }
+.bar:nth-child(24) { animation: rms-bar 500ms var(--ease-out-expo) infinite alternate; --h-min: 8px;  --h-max: 36px; animation-delay: -920ms; }
+.bar:nth-child(25) { animation: rms-bar 540ms var(--ease-out-expo) infinite alternate; --h-min: 10px; --h-max: 30px; animation-delay: -960ms; }
+.bar:nth-child(26) { animation: rms-bar 480ms var(--ease-out-expo) infinite alternate; --h-min: 6px;  --h-max: 38px; animation-delay: -1000ms; }
+.bar:nth-child(27) { animation: rms-bar 460ms var(--ease-out-expo) infinite alternate; --h-min: 12px; --h-max: 42px; animation-delay: -1040ms; }
+.bar:nth-child(28) { animation: rms-bar 520ms var(--ease-out-expo) infinite alternate; --h-min: 8px;  --h-max: 28px; animation-delay: -1080ms; }
+.bar:nth-child(29) { animation: rms-bar 500ms var(--ease-out-expo) infinite alternate; --h-min: 10px; --h-max: 34px; animation-delay: -1120ms; }
+.bar:nth-child(30) { animation: rms-bar 540ms var(--ease-out-expo) infinite alternate; --h-min: 6px;  --h-max: 32px; animation-delay: -1160ms; }
+.bar:nth-child(31) { animation: rms-bar 480ms var(--ease-out-expo) infinite alternate; --h-min: 8px;  --h-max: 38px; animation-delay: -1200ms; }
+.bar:nth-child(32) { animation: rms-bar 460ms var(--ease-out-expo) infinite alternate; --h-min: 10px; --h-max: 26px; animation-delay: -1240ms; }
+
+@keyframes rms-bar {
+  0%   { height: var(--h-min); opacity: 0.85; }
+  100% { height: var(--h-max); opacity: 1; }
+}
+
+/* 按钮组 */
+.controls {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+.btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 var(--space-4);
+  background: transparent;
+  border: 1px solid var(--surface-4);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--dur-fast) var(--ease-out-expo);
+  text-transform: uppercase;
+}
+.btn:hover {
+  border-color: var(--surface-4);
+  background: var(--surface-2);
+  color: var(--text-primary);
+}
+.btn .glyph {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: var(--text-secondary);
+  border-radius: 50%;
+}
+.btn.rec {
+  background: var(--brand-500);
+  border-color: var(--brand-500);
+  color: #fff;
+  box-shadow: var(--shadow-brand-glow);
+}
+.btn.rec .glyph {
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 6px rgba(255,255,255,0.6);
+  animation: pulse-dot 1.2s ease-in-out infinite;
+}
+.btn.test {
+  border-color: var(--surface-4);
+  color: var(--scope-cyan);
+}
+.btn.test .glyph {
+  background: var(--scope-cyan);
+  border-radius: 1px;
+  width: 6px;
+  height: 6px;
+}
+
+/* === 右栏 — 对话流 === */
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: var(--border-hairline);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+.chat-header .left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.chat-header .left::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--scope-cyan);
+  border-radius: 50%;
+  box-shadow: 0 0 6px rgba(94, 234, 212, 0.5);
+}
+.chat-header .right {
+  display: flex;
+  gap: var(--space-4);
+  color: var(--text-tertiary);
+}
+.chat-header .right span b {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.chat-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-height: 0;
+}
+
+/* 消息分组 — 角色标签 + 气泡 */
+.msg {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 88%;
+}
+.msg.user { align-self: flex-end; align-items: flex-end; }
+.msg.ai   { align-self: flex-start; align-items: flex-start; }
+.msg.sys  { align-self: center; align-items: stretch; max-width: 70%; }
+
+.msg-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+}
+.msg-tag .time {
+  color: var(--text-tertiary);
+  opacity: 0.7;
+  letter-spacing: 0.06em;
+}
+.msg.user .msg-tag .role { color: var(--brand-400); }
+.msg.ai   .msg-tag .role { color: var(--scope-cyan); }
+.msg.sys  .msg-tag .role { color: var(--text-tertiary); }
+
+.bubble {
+  padding: var(--space-3) var(--space-4);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  position: relative;
+}
+.msg.user .bubble {
+  background: var(--brand-500);
+  color: #fff;
+  border-bottom-right-radius: var(--radius-sm);
+  box-shadow: 0 4px 16px rgba(200, 69, 60, 0.25);
+}
+.msg.ai .bubble {
+  background: var(--surface-2);
+  border: var(--border-hairline);
+  border-bottom-left-radius: var(--radius-sm);
+}
+.msg.sys .bubble {
+  background: rgba(28, 28, 32, 0.6);
+  border: var(--border-hairline);
+  border-left: 2px solid var(--brand-500);
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding: var(--space-2) var(--space-4);
+  text-align: center;
+}
+
+/* === Signature #4: 流式回复光标 === */
+.cursor {
+  display: inline-block;
+  width: 8px;
+  height: 14px;
+  background: var(--brand-500);
+  vertical-align: text-bottom;
+  margin-left: 2px;
+  margin-bottom: 2px;
+  box-shadow: 0 0 6px var(--brand-glow);
+  animation: cursor-breath 800ms var(--ease-out-expo) infinite;
+}
+@keyframes cursor-breath {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* 流式文字渐显 — 模拟"解码"动效 */
+.stream-char {
+  display: inline;
+  opacity: 1;
+}
+.stream-char.fresh {
+  animation: char-decode 600ms var(--ease-out-expo);
+}
+@keyframes char-decode {
+  0%   { opacity: 0; filter: blur(2px); color: var(--scope-cyan); }
+  60%  { opacity: 0.6; filter: blur(0.5px); color: var(--text-secondary); }
+  100% { opacity: 1; filter: blur(0); color: var(--text-primary); }
+}
+
+/* === StatusBar 底部读数面板 === */
+.statusbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 32px;
+  padding: 0 var(--space-6);
+  background: var(--surface-1);
+  border: var(--border-hairline);
+  border-radius: var(--radius-lg);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+.statusbar .group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+.statusbar .item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.statusbar .item .key { color: var(--text-tertiary); }
+.statusbar .item .val { color: var(--text-secondary); font-weight: 500; }
+.statusbar .item .val.ok    { color: var(--accent-success); }
+.statusbar .item .val.warn  { color: var(--accent-warning); }
+.statusbar .item .val.err   { color: var(--accent-danger); }
+.statusbar .item .val.brand { color: var(--brand-400); }
+.statusbar .item .val.cyan  { color: var(--scope-cyan); }
+.statusbar .sep {
+  color: var(--surface-4);
+  margin: 0 2px;
+}
+
+/* AI 处理中指示 — 朱砂红呼吸点 */
+.statusbar .ai-thinking {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.statusbar .ai-thinking::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  background: var(--brand-500);
+  border-radius: 50%;
+  box-shadow: 0 0 6px var(--brand-glow);
+  animation: pulse-dot 1.2s ease-in-out infinite;
+}
+
+/* === 响应式 — 移动端 === */
+@media (max-width: 768px) {
+  html, body {
+    height: auto;
+    min-height: 100%;
+    overflow: auto;
+  }
+  .app {
+    height: auto;
+    min-height: 100vh;
+    padding: var(--space-2);
+    gap: var(--space-2);
+  }
+  .header {
+    padding: 0 var(--space-3);
+    height: 52px;
+  }
+  .logo-title .name { font-size: 16px; letter-spacing: 0.12em; }
+  .logo-title .sub  { font-size: 9px; }
+  .readouts {
+    gap: var(--space-2);
+    font-size: 10px;
+  }
+  .readout .key { display: none; }
+  .readout .val { display: none; }
+  /* 移动端只保留状态点 */
+  .readout .dot { width: 8px; height: 8px; }
+
+  .main {
+    flex-direction: column;
+  }
+  .col-left {
+    width: 100%;
+  }
+  .col-right {
+    min-height: 220px;
+    flex: 0 0 auto;
+  }
+  .chat-body {
+    padding: var(--space-3);
+    /* 移动端不滚动 chat-body，让外层 body 滚动整页 */
+    overflow-y: visible;
+  }
+  .camera-frame { aspect-ratio: 4 / 3; }
+  .scope-bars { height: 40px; }
+  .controls .btn { height: 34px; font-size: 11px; }
+  .statusbar {
+    padding: 0 var(--space-3);
+    height: 28px;
+    font-size: 10px;
+    overflow-x: auto;
+  }
+  .statusbar .group { gap: var(--space-2); }
+}
+</style>
+</head>
+<body>
+<!-- Signature #5: 背景网格 -->
+<div class="bg-grid"></div>
+
+<div class="app">
+  <!-- ============ Header ============ -->
+  <header class="header">
+    <div class="header-left">
+      <div class="logo-mark" aria-label="XEngineer logo">
+        <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- 取景框外框 -->
+          <rect x="1" y="1" width="26" height="26" rx="2" stroke="#c8453c" stroke-width="1.2" opacity="0.7"/>
+          <!-- 四角 L 形 -->
+          <path d="M1 6 L1 1 L6 1" stroke="#c8453c" stroke-width="1.8" fill="none"/>
+          <path d="M22 1 L27 1 L27 6" stroke="#c8453c" stroke-width="1.8" fill="none"/>
+          <path d="M27 22 L27 27 L22 27" stroke="#c8453c" stroke-width="1.8" fill="none"/>
+          <path d="M6 27 L1 27 L1 22" stroke="#c8453c" stroke-width="1.8" fill="none"/>
+          <!-- 中心十字 -->
+          <line x1="14" y1="9"  x2="14" y2="19" stroke="#5eead4" stroke-width="1"/>
+          <line x1="9"  y1="14" x2="19" y2="14" stroke="#5eead4" stroke-width="1"/>
+          <!-- 中心点 -->
+          <circle cx="14" cy="14" r="1.6" fill="#c8453c"/>
+        </svg>
+      </div>
+      <div class="logo-title">
+        <span class="name">XEngineer</span>
+        <span class="sub">AI VISION CONVERSATION ASSISTANT</span>
+      </div>
+    </div>
+
+    <!-- Signature #3: 数据读数条 -->
+    <div class="readouts">
+      <div class="readout">
+        <span class="dot dot-connected"></span>
+        <span class="key">WS</span>
+        <span class="val active">CONNECTED</span>
+      </div>
+      <div class="readout">
+        <span class="dot dot-speaking"></span>
+        <span class="key">VAD</span>
+        <span class="val brand">SPEAKING</span>
+      </div>
+      <div class="readout">
+        <span class="dot dot-connected" style="background:var(--scope-cyan); box-shadow:0 0 6px rgba(94,234,212,0.6);"></span>
+        <span class="key">SR</span>
+        <span class="val cyan">24kHz</span>
+      </div>
+      <div class="readout">
+        <span class="key">FW</span>
+        <span class="val">v0.1.0</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============ Main 双栏 ============ -->
+  <div class="main">
+
+    <!-- ===== 左栏 ===== -->
+    <div class="col-left">
+
+      <!-- Camera 面板 -->
+      <div class="camera-panel">
+        <div class="camera-header">
+          <span class="channel">CH·01 / VISION PROBE</span>
+          <span class="meta">640×480 · 30fps · JPEG q0.6</span>
+        </div>
+
+        <div class="camera-frame">
+          <!-- 模拟镜头画面 -->
+          <div class="camera-scene"></div>
+          <div class="scanline"></div>
+
+          <!-- Signature #1: 取景器四角 L 形 -->
+          <div class="corner tl"></div>
+          <div class="corner tr"></div>
+          <div class="corner bl"></div>
+          <div class="corner br"></div>
+
+          <!-- Signature #1: 中心十字 hairline -->
+          <div class="crosshair"></div>
+
+          <!-- 角部刻度标记 -->
+          <div class="camera-ticks">
+            <span class="tl">+00.00</span>
+            <span class="br">F2.8 · ISO 400</span>
+          </div>
+        </div>
+
+        <div class="camera-foot">
+          <span class="live">LIVE · CAPTURING</span>
+          <span>FRAME 0xA3F2</span>
+        </div>
+      </div>
+
+      <!-- 示波器面板 — Signature #2 -->
+      <div class="scope-panel">
+        <div class="scope-header">
+          <span class="label">CH·02 / AUDIO RMS</span>
+          <span class="scale">SCALE <b>10dB/div</b> · TRIG <b>AUTO</b></span>
+        </div>
+        <div class="scope-bars" aria-label="32-bar oscilloscope waveform">
+          <span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span>
+          <span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span>
+          <span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span>
+          <span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span>
+          <span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span>
+          <span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span>
+          <span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span>
+          <span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span>
+        </div>
+
+        <div class="controls">
+          <button class="btn rec" type="button">
+            <span class="glyph"></span>
+            <span>● REC · STOP</span>
+          </button>
+          <button class="btn test" type="button">
+            <span class="glyph"></span>
+            <span>TEST MSG</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ===== 右栏 — 对话流 ===== -->
+    <div class="col-right">
+      <div class="chat-header">
+        <span class="left">CONVERSATION LOG · STREAM DECODER</span>
+        <span class="right">
+          <span>MSG <b>04</b></span>
+          <span>LAT <b>42ms</b></span>
+        </span>
+      </div>
+
+      <div class="chat-body">
+        <!-- USER 消息 -->
+        <div class="msg user">
+          <div class="msg-tag">
+            <span class="role">USER</span>
+            <span class="time">14:32:08</span>
+          </div>
+          <div class="bubble">你好，你能看到我吗？</div>
+        </div>
+
+        <!-- AI 流式回复 (含光标) -->
+        <div class="msg ai">
+          <div class="msg-tag">
+            <span class="role">AI · STREAMING</span>
+            <span class="time">14:32:11</span>
+          </div>
+          <div class="bubble">
+            是的，我能看到你。你戴着一副金属半框眼镜，身穿深蓝色 T 恤，背景是一面浅灰色的墙，墙上挂着一幅装饰画。你的左手边似乎有一台显示器<span class="cursor"></span>
+          </div>
+        </div>
+
+        <!-- SYS 系统消息 -->
+        <div class="msg sys">
+          <div class="msg-tag" style="justify-content:center;">
+            <span class="role">SYS</span>
+            <span class="time">14:32:09</span>
+          </div>
+          <div class="bubble">CAMERA · ACTIVATED · 640×480 @ 30fps</div>
+        </div>
+
+        <!-- USER 第二条消息 -->
+        <div class="msg user">
+          <div class="msg-tag">
+            <span class="role">USER</span>
+            <span class="time">14:32:34</span>
+          </div>
+          <div class="bubble">好的，那你能听到我说话吗？</div>
+        </div>
+
+        <!-- AI 第二条回复（已完整） -->
+        <div class="msg ai">
+          <div class="msg-tag">
+            <span class="role">AI</span>
+            <span class="time">14:32:37</span>
+          </div>
+          <div class="bubble">能听到，你的声音清晰、节奏平稳，背景几乎没有噪声。可以正常开始对话。</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ============ StatusBar ============ -->
+  <footer class="statusbar">
+    <div class="group">
+      <div class="item">
+        <span class="key">WS:</span><span class="val ok">CONNECTED</span>
+      </div>
+      <span class="sep">│</span>
+      <div class="item">
+        <span class="key">VAD:</span><span class="val brand">SPEAKING</span>
+      </div>
+      <span class="sep">│</span>
+      <div class="item ai-thinking">
+        <span class="key">AI:</span><span class="val brand">THINKING</span>
+      </div>
+      <span class="sep">│</span>
+      <div class="item">
+        <span class="key">SR:</span><span class="val cyan">24kHz</span>
+      </div>
+      <span class="sep">│</span>
+      <div class="item">
+        <span class="key">TTS:</span><span class="val cyan">MP3·128K</span>
+      </div>
+    </div>
+    <div class="group">
+      <div class="item">
+        <span class="key">SESSION:</span><span class="val">0xA3F2·B7E1</span>
+      </div>
+      <span class="sep">│</span>
+      <div class="item">
+        <span class="val">XEngineer v0.1.0</span>
+      </div>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>

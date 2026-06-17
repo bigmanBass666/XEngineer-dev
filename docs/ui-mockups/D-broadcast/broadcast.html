@@ -1,0 +1,1543 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XEngineer — Broadcast Studio Mockup (D)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Source+Sans+Pro:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   XEngineer Broadcast Studio — Mockup D
+   Design tokens strictly per spec
+   ============================================================ */
+:root {
+  /* Colors (strictly per brief) */
+  --walnut: #2a1810;
+  --brass: #b08d57;
+  --ivory: #f5e6d3;
+  --vu-green: #4ade80;
+  --amber: #fbbf24;
+  --velvet: #5c1f1f;
+  --wood-dark: #1a0d08;
+
+  /* Derived shades for tonal work */
+  --brass-bright: #c9a26a;
+  --brass-dim: #8a6f44;
+  --brass-deep: #5c4a2d;
+  --ivory-dim: rgba(245, 230, 211, 0.65);
+  --ivory-faint: rgba(245, 230, 211, 0.4);
+  --panel-warm: #3a2418;
+  --panel-warm-2: #4a2e1e;
+  --velvet-glow: #b13030;
+  --velvet-bright: #ff4040;
+
+  /* Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  /* Borders */
+  --border-brass: 1px solid var(--brass);
+  --border-wood: 2px solid var(--wood-dark);
+  --border-brass-thick: 4px solid var(--brass);
+
+  /* Fonts */
+  --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --font-body: 'Source Sans Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', Menlo, monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--ivory);
+  background-color: var(--walnut);
+  /* Walnut wood texture — layered repeating gradients to simulate grain */
+  background-image:
+    /* coarse wavy grain (slight angle variation) */
+    repeating-linear-gradient(91deg,
+      rgba(0,0,0,0.20) 0px,
+      rgba(0,0,0,0.20) 1px,
+      transparent 1px,
+      transparent 13px),
+    /* medium grain */
+    repeating-linear-gradient(89deg,
+      rgba(0,0,0,0.12) 0px,
+      rgba(0,0,0,0.12) 2px,
+      transparent 2px,
+      transparent 7px),
+    /* fine grain */
+    repeating-linear-gradient(90deg,
+      rgba(176,141,87,0.05) 0px,
+      rgba(176,141,87,0.05) 1px,
+      transparent 1px,
+      transparent 3px),
+    /* brass-tinted streaks */
+    repeating-linear-gradient(88deg,
+      rgba(176,141,87,0.03) 0px,
+      rgba(176,141,87,0.03) 2px,
+      transparent 2px,
+      transparent 23px),
+    /* base vertical gradient — top warmer, bottom deeper */
+    linear-gradient(180deg, #341e15 0%, #2a1810 40%, #1f120a 100%);
+  background-attachment: fixed;
+  overflow: hidden;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+}
+
+/* ============================================================
+   HEADER — h-14 (56px) with brass border + call-sign waveform
+   ============================================================ */
+.header {
+  height: 56px;
+  background:
+    linear-gradient(180deg, #42291a 0%, #2e1a10 60%, #221208 100%);
+  border-bottom: var(--border-brass);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 14px;
+  position: relative;
+  flex-shrink: 0;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.5),
+    inset 0 -1px 0 rgba(176,141,87,0.45),
+    inset 0 1px 0 rgba(201,162,106,0.15);
+}
+
+/* Call-sign waveform decoration along the bottom edge of header */
+.header::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 20%;
+  width: 60%;
+  height: 12px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 12' preserveAspectRatio='none'><path d='M0,6 L20,6 L24,2 L28,10 L32,3 L36,9 L40,6 L80,6 L84,1 L88,11 L92,4 L96,8 L100,6 L150,6 L154,3 L158,9 L162,2 L166,10 L170,6 L210,6 L214,4 L218,8 L222,1 L226,11 L230,5 L234,7 L238,6 L290,6 L294,2 L298,10 L302,3 L306,9 L310,6 L360,6 L364,1 L368,11 L372,4 L376,8 L380,6 L420,6 L424,3 L428,9 L432,2 L436,10 L440,6 L490,6 L494,4 L498,8 L502,1 L506,11 L510,5 L514,7 L518,6 L570,6 L574,2 L578,10 L582,3 L586,9 L590,6 L600,6' stroke='%23b08d57' stroke-width='1.2' fill='none' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.logo-block {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 2;
+}
+
+.logo-mark {
+  width: 34px;
+  height: 34px;
+  border: 2px solid var(--brass);
+  border-radius: var(--radius-sm);
+  background: radial-gradient(circle at 30% 30%, #d4b078 0%, #b08d57 50%, #6e5631 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 20px;
+  color: var(--wood-dark);
+  letter-spacing: -0.02em;
+  box-shadow:
+    inset 0 -2px 4px rgba(0,0,0,0.45),
+    inset 0 1px 1px rgba(255,220,160,0.4),
+    0 1px 3px rgba(0,0,0,0.7);
+  position: relative;
+}
+
+.logo-mark::after {
+  /* tiny engraved mic icon hint */
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border: 1px solid rgba(26,13,8,0.4);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.05;
+}
+
+.logo-text .title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 19px;
+  letter-spacing: 0.08em;
+  color: var(--ivory);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+}
+
+.logo-text .subtitle {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  color: var(--brass);
+  text-transform: uppercase;
+  margin-top: 3px;
+}
+
+.header-spacer { flex: 1; }
+
+/* ON AIR host red light */
+.on-air {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 14px;
+  border: var(--border-brass);
+  border-radius: var(--radius-sm);
+  background: linear-gradient(180deg, rgba(0,0,0,0.55), rgba(0,0,0,0.35));
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.6);
+  z-index: 2;
+}
+
+.on-air-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--velvet);
+  box-shadow:
+    0 0 8px var(--velvet),
+    0 0 16px rgba(255,80,80,0.5),
+    inset 0 0 4px rgba(255,120,120,0.5);
+  animation: on-air-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes on-air-pulse {
+  0%, 100% {
+    background: var(--velvet);
+    box-shadow:
+      0 0 6px var(--velvet),
+      0 0 12px rgba(255,80,80,0.4),
+      inset 0 0 3px rgba(255,100,100,0.4);
+  }
+  50% {
+    background: var(--velvet-glow);
+    box-shadow:
+      0 0 14px var(--velvet-bright),
+      0 0 26px rgba(255,70,70,0.7),
+      0 0 36px rgba(255,60,60,0.4),
+      inset 0 0 6px rgba(255,150,150,0.7);
+  }
+}
+
+.on-air-label {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: var(--velvet-glow);
+  text-shadow: 0 0 6px rgba(255,80,80,0.7);
+}
+
+/* Header readouts (mono technical chips) */
+.readouts {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 2;
+}
+
+.readout {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 9px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ivory-dim);
+  letter-spacing: 0.06em;
+  background: rgba(0,0,0,0.55);
+  border: 1px solid var(--brass-dim);
+  border-radius: var(--radius-sm);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+}
+
+.readout .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--vu-green);
+  box-shadow: 0 0 4px var(--vu-green);
+}
+
+.readout .dot.amber {
+  background: var(--amber);
+  box-shadow: 0 0 4px var(--amber);
+}
+
+.readout .dot.brass {
+  background: var(--brass);
+  box-shadow: 0 0 3px var(--brass);
+}
+
+.readout .dot.velvet {
+  background: var(--velvet-glow);
+  box-shadow: 0 0 4px var(--velvet-glow);
+  animation: dot-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes dot-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ============================================================
+   MAIN — left panel + right panel
+   ============================================================ */
+.main {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ---------- LEFT PANEL ---------- */
+.left-panel {
+  width: 460px;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, rgba(58,36,24,0.85), rgba(42,24,16,0.9));
+  border-right: var(--border-brass);
+  padding: 18px 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+  box-shadow: inset -8px 0 18px rgba(0,0,0,0.35);
+}
+
+.left-panel::-webkit-scrollbar { width: 6px; }
+.left-panel::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+.left-panel::-webkit-scrollbar-thumb { background: var(--brass-dim); border-radius: 3px; }
+
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.28em;
+  color: var(--brass);
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.section-label::before, .section-label::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--brass-dim) 30%, var(--brass-dim) 70%, transparent);
+}
+
+.section-label .label-text {
+  white-space: nowrap;
+}
+
+/* ============================================================
+   SIGNATURE #3 — Camera as Vintage TV Frame
+   ============================================================ */
+.tv-frame {
+  position: relative;
+  background: linear-gradient(180deg, #2a160c 0%, #1a0d08 100%);
+  border: var(--border-brass-thick);
+  border-radius: 24px 24px 32px 32px;
+  padding: 12px 12px 14px;
+  box-shadow:
+    inset 0 0 14px rgba(0,0,0,0.85),
+    0 4px 14px rgba(0,0,0,0.6),
+    0 0 0 1px rgba(176,141,87,0.25);
+}
+
+.tv-screen {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background:
+    radial-gradient(ellipse at 50% 45%, #2a3a28 0%, #182218 50%, #080c08 100%);
+  border-radius: 20px 20px 14px 14px;
+  overflow: hidden;
+  border: 2px solid var(--wood-dark);
+  box-shadow: inset 0 0 22px rgba(0,0,0,0.85);
+}
+
+/* CRT scanlines overlay */
+.tv-screen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(0deg,
+      rgba(0,0,0,0.32) 0px,
+      rgba(0,0,0,0.32) 1px,
+      transparent 1px,
+      transparent 3px);
+  pointer-events: none;
+  z-index: 4;
+  mix-blend-mode: multiply;
+}
+
+/* CRT green tint + vignette + glass curvature highlight */
+.tv-screen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 90% 80% at 50% 50%, transparent 55%, rgba(0,0,0,0.7) 100%),
+    linear-gradient(180deg, rgba(74,222,128,0.10) 0%, rgba(74,222,128,0.04) 100%),
+    linear-gradient(160deg, rgba(255,255,255,0.06) 0%, transparent 30%);
+  pointer-events: none;
+  z-index: 5;
+}
+
+.tv-content {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--vu-green);
+  font-family: var(--font-mono);
+  text-align: center;
+  text-shadow: 0 0 8px rgba(74,222,128,0.7);
+  padding: 14px;
+}
+
+/* static noise simulation */
+.tv-static {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background-image:
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.05) 0px, rgba(255,255,255,0.05) 1px, transparent 1px, transparent 2px),
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.025) 0px, rgba(255,255,255,0.025) 1px, transparent 1px, transparent 4px);
+  animation: noise-shift 0.18s steps(3) infinite;
+  opacity: 0.6;
+}
+
+@keyframes noise-shift {
+  0%   { transform: translate(0, 0); }
+  33%  { transform: translate(-1px, 1px); }
+  66%  { transform: translate(1px, -1px); }
+  100% { transform: translate(0, 0); }
+}
+
+.tv-content .glyph {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  margin-bottom: 6px;
+  color: var(--vu-green);
+  text-shadow: 0 0 12px rgba(74,222,128,0.8);
+  animation: crt-flicker 4s ease-in-out infinite;
+}
+
+@keyframes crt-flicker {
+  0%, 92%, 100% { opacity: 1; }
+  93% { opacity: 0.75; }
+  94% { opacity: 1; }
+  95% { opacity: 0.85; }
+  96% { opacity: 1; }
+}
+
+.tv-content .freq {
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  opacity: 0.75;
+  margin-top: 4px;
+}
+
+.tv-content .ch-marker {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: var(--vu-green);
+  opacity: 0.85;
+}
+
+.tv-content .rec-marker {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: var(--velvet-glow);
+  text-shadow: 0 0 6px rgba(255,80,80,0.6);
+}
+
+.tv-content .rec-marker .blink-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--velvet-glow);
+  box-shadow: 0 0 6px var(--velvet-bright);
+  animation: rec-blink 1s steps(2) infinite;
+}
+
+@keyframes rec-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0.15; }
+}
+
+/* TV knobs at the bottom of the frame */
+.tv-knobs {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  margin-top: 10px;
+  padding: 0 24px;
+}
+
+.knob {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--brass-bright) 0%, var(--brass) 50%, var(--brass-deep) 100%);
+  box-shadow:
+    0 1px 2px rgba(0,0,0,0.7),
+    inset 0 -1px 2px rgba(0,0,0,0.35),
+    inset 0 1px 1px rgba(255,220,160,0.35);
+  position: relative;
+}
+
+.knob::after {
+  content: "";
+  position: absolute;
+  top: 1px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1px;
+  height: 4px;
+  background: var(--wood-dark);
+}
+
+/* ============================================================
+   SIGNATURE #2 — VU Meter with sweeping needle
+   ============================================================ */
+.vu-block {
+  background: linear-gradient(180deg, rgba(0,0,0,0.55), rgba(0,0,0,0.4));
+  border: var(--border-brass);
+  border-radius: var(--radius-md);
+  padding: 14px 18px 12px;
+  box-shadow:
+    inset 0 2px 8px rgba(0,0,0,0.7),
+    0 1px 2px rgba(0,0,0,0.4);
+}
+
+.vu-block-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 4px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: var(--brass);
+  text-transform: uppercase;
+}
+
+.vu-block-header .vu-reading {
+  color: var(--vu-green);
+  text-shadow: 0 0 6px rgba(74,222,128,0.6);
+}
+
+.vu-svg-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  padding: 0 4px;
+}
+
+.vu-svg {
+  width: 100%;
+  max-width: 360px;
+  height: auto;
+  display: block;
+}
+
+.vu-needle {
+  /* needle swing handled via SVG <animateTransform>, no CSS needed */
+}
+
+/* ============================================================
+   SIGNATURE #1 — Physical fader as record button
+   ============================================================ */
+.controls-row {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.fader-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.5), rgba(0,0,0,0.35));
+  border: var(--border-brass);
+  border-radius: var(--radius-md);
+  box-shadow:
+    inset 0 1px 3px rgba(0,0,0,0.6),
+    0 1px 2px rgba(0,0,0,0.4);
+  position: relative;
+}
+
+/* Vertical fader track: 4px wide, 40px tall, brass */
+.fader-track {
+  width: 4px;
+  height: 40px;
+  background: linear-gradient(180deg, var(--brass-deep), var(--brass) 50%, var(--brass-deep));
+  border-radius: 2px;
+  position: relative;
+  box-shadow:
+    inset 0 0 2px rgba(0,0,0,0.7),
+    0 0 0 1px rgba(0,0,0,0.4);
+}
+
+/* Tick marks alongside fader */
+.fader-track::before,
+.fader-track::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  width: 4px;
+  height: 1px;
+  background: var(--brass-dim);
+}
+.fader-track::before { top: 4px; }
+.fader-track::after { bottom: 4px; }
+
+/* Sliding fader handle: 16x8 brass rectangle */
+.fader-handle {
+  width: 16px;
+  height: 8px;
+  background: linear-gradient(180deg, var(--brass-bright) 0%, var(--brass) 50%, var(--brass-dim) 100%);
+  border: 1px solid var(--wood-dark);
+  border-radius: 1px;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  box-shadow:
+    0 1px 2px rgba(0,0,0,0.7),
+    inset 0 1px 1px rgba(255,220,160,0.5);
+}
+
+/* Handle position: active = top, inactive = bottom */
+.fader-btn.active .fader-handle {
+  top: 1px;
+}
+
+.fader-btn.inactive .fader-handle {
+  bottom: 1px;
+}
+
+/* Center line on handle for grip detail */
+.fader-handle::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 2px;
+  right: 2px;
+  height: 1px;
+  background: var(--wood-dark);
+  transform: translateY(-50%);
+}
+
+.fader-state {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.fader-state-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.rec-light {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--brass-deep);
+  box-shadow: inset 0 0 2px rgba(0,0,0,0.7);
+  flex-shrink: 0;
+}
+
+.fader-btn.active .rec-light {
+  background: var(--velvet);
+  box-shadow:
+    0 0 8px var(--velvet),
+    0 0 16px rgba(255,80,80,0.55),
+    inset 0 0 3px rgba(255,150,150,0.6);
+  animation: rec-light-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes rec-light-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 6px var(--velvet),
+      0 0 12px rgba(255,80,80,0.4),
+      inset 0 0 3px rgba(255,140,140,0.5);
+  }
+  50% {
+    box-shadow:
+      0 0 14px var(--velvet-bright),
+      0 0 24px rgba(255,70,70,0.7),
+      inset 0 0 5px rgba(255,170,170,0.7);
+  }
+}
+
+.state-label {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.16em;
+}
+
+.fader-btn.active .state-label {
+  color: var(--velvet-glow);
+  text-shadow: 0 0 8px rgba(255,80,80,0.7);
+}
+
+.fader-btn.inactive .state-label {
+  color: var(--ivory-faint);
+}
+
+.state-sub {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: var(--brass);
+  text-transform: uppercase;
+}
+
+/* Test button — vintage brass-bordered push button */
+.test-btn {
+  width: 110px;
+  padding: 10px 12px;
+  background: linear-gradient(180deg, #4a2e1e 0%, #2a1810 100%);
+  border: var(--border-brass);
+  border-radius: var(--radius-md);
+  color: var(--ivory);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  text-transform: uppercase;
+  box-shadow:
+    inset 0 1px 2px rgba(255,220,160,0.2),
+    inset 0 -2px 4px rgba(0,0,0,0.5),
+    0 2px 4px rgba(0,0,0,0.5);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  transition: all 0.15s ease;
+}
+
+.test-btn:hover {
+  background: linear-gradient(180deg, #5a3826 0%, #2e1a10 100%);
+}
+
+.test-btn:active {
+  transform: translateY(1px);
+  box-shadow:
+    inset 0 2px 4px rgba(0,0,0,0.7),
+    0 1px 1px rgba(0,0,0,0.4);
+}
+
+.test-btn .btn-icon {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--brass);
+  line-height: 1;
+}
+
+.test-btn .btn-sub {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.22em;
+  color: var(--brass);
+  font-weight: 400;
+  text-transform: uppercase;
+}
+
+/* ============================================================
+   RIGHT PANEL — Chat / Broadcast log
+   ============================================================ */
+.right-panel {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, rgba(42,24,16,0.55), rgba(26,13,8,0.65));
+  overflow: hidden;
+}
+
+.chat-header {
+  padding: 12px 22px;
+  border-bottom: var(--border-brass);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(0,0,0,0.25);
+  flex-shrink: 0;
+}
+
+.chat-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.16em;
+  color: var(--ivory);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.chat-title .tape-icon {
+  display: inline-block;
+  width: 16px;
+  height: 12px;
+  background:
+    radial-gradient(circle at 25% 50%, var(--brass) 2px, transparent 3px),
+    radial-gradient(circle at 75% 50%, var(--brass) 2px, transparent 3px),
+    linear-gradient(180deg, var(--brass-dim), var(--brass-deep));
+  border: 1px solid var(--wood-dark);
+  border-radius: 1px;
+}
+
+.chat-meta {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: var(--brass);
+  text-transform: uppercase;
+  display: flex;
+  gap: 14px;
+}
+
+.chat-meta span { display: flex; align-items: center; gap: 5px; }
+.chat-meta .dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--vu-green);
+  box-shadow: 0 0 4px var(--vu-green);
+}
+
+.chat-stream {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.chat-stream::-webkit-scrollbar { width: 8px; }
+.chat-stream::-webkit-scrollbar-track { background: rgba(0,0,0,0.25); }
+.chat-stream::-webkit-scrollbar-thumb {
+  background: var(--brass-dim);
+  border-radius: 4px;
+  border: 1px solid var(--wood-dark);
+}
+
+/* Message base */
+.msg {
+  display: flex;
+  flex-direction: column;
+  max-width: 78%;
+  animation: msg-in 0.4s ease-out backwards;
+}
+
+@keyframes msg-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.msg-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.msg-meta .role {
+  font-weight: 500;
+  padding: 1px 6px;
+  border-radius: 2px;
+}
+
+.msg-meta .time {
+  color: var(--ivory-faint);
+  font-weight: 400;
+  letter-spacing: 0.1em;
+}
+
+.msg-bubble {
+  padding: 10px 14px;
+  font-size: 14px;
+  line-height: 1.6;
+  border-radius: var(--radius-md);
+  position: relative;
+}
+
+/* USER message — brass-tinted, right aligned */
+.msg-user {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.msg-user .msg-meta .role {
+  background: var(--brass);
+  color: var(--wood-dark);
+}
+
+.msg-user .msg-bubble {
+  background: linear-gradient(180deg, rgba(176,141,87,0.22), rgba(176,141,87,0.14));
+  border: 1px solid var(--brass-dim);
+  color: var(--ivory);
+  border-bottom-right-radius: var(--radius-sm);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+
+/* AI message — ivory-tinted, left aligned, with mic indicator */
+.msg-ai {
+  align-self: flex-start;
+  align-items: flex-start;
+}
+
+.msg-ai .msg-meta .role {
+  background: var(--velvet);
+  color: var(--ivory);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.msg-ai .msg-meta .role::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--velvet-bright);
+  box-shadow: 0 0 5px var(--velvet-bright);
+  animation: dot-pulse 1.4s ease-in-out infinite;
+}
+
+.msg-ai .msg-bubble {
+  background: linear-gradient(180deg, rgba(245,230,211,0.08), rgba(245,230,211,0.04));
+  border: 1px solid rgba(245,230,211,0.2);
+  color: var(--ivory);
+  border-bottom-left-radius: var(--radius-sm);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+
+/* Streaming cursor (brass block) */
+.cursor {
+  display: inline-block;
+  width: 8px;
+  height: 14px;
+  background: var(--brass);
+  vertical-align: text-bottom;
+  margin-left: 2px;
+  margin-bottom: 1px;
+  box-shadow: 0 0 6px rgba(176,141,87,0.7);
+  animation: cursor-blink 0.9s steps(2) infinite;
+}
+
+@keyframes cursor-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0.1; }
+}
+
+/* SYSTEM message — centered narrow strip */
+.msg-sys {
+  align-self: center;
+  align-items: center;
+  max-width: 90%;
+}
+
+.msg-sys .msg-meta {
+  margin-bottom: 0;
+}
+
+.msg-sys .msg-meta .role {
+  background: transparent;
+  color: var(--brass);
+  border: 1px solid var(--brass-dim);
+  padding: 1px 8px;
+}
+
+.msg-sys .sys-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin: 6px 0 2px;
+}
+
+.msg-sys .sys-line::before,
+.msg-sys .sys-line::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--brass-dim), transparent);
+}
+
+.msg-sys .sys-text {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--brass);
+  text-transform: uppercase;
+  padding: 3px 12px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--brass-dim);
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+
+/* Timestamp separator at top of stream */
+.session-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 2px 0 8px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  color: var(--brass);
+  text-transform: uppercase;
+}
+
+.session-divider::before,
+.session-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--brass-dim), transparent);
+}
+
+/* ============================================================
+   STATUS BAR — broadcast console readout
+   ============================================================ */
+.status-bar {
+  height: 36px;
+  background: linear-gradient(180deg, #2a1810 0%, #1a0d08 100%);
+  border-top: var(--border-brass);
+  display: flex;
+  align-items: center;
+  padding: 0 18px;
+  gap: 0;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ivory-dim);
+  letter-spacing: 0.1em;
+  flex-shrink: 0;
+  box-shadow:
+    inset 0 1px 0 rgba(176,141,87,0.4),
+    0 -2px 6px rgba(0,0,0,0.3);
+}
+
+.status-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px;
+  height: 100%;
+  border-right: 1px solid var(--brass-deep);
+}
+
+.status-cell:last-child {
+  border-right: none;
+  margin-left: auto;
+}
+
+.status-cell .label {
+  color: var(--brass);
+  letter-spacing: 0.18em;
+}
+
+.status-cell .value {
+  color: var(--ivory);
+  letter-spacing: 0.05em;
+}
+
+.status-cell .value.green { color: var(--vu-green); text-shadow: 0 0 5px rgba(74,222,128,0.5); }
+.status-cell .value.amber { color: var(--amber); }
+.status-cell .value.velvet {
+  color: var(--velvet-glow);
+  text-shadow: 0 0 5px rgba(255,80,80,0.6);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.status-cell .value.velvet::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--velvet-glow);
+  box-shadow: 0 0 5px var(--velvet-bright);
+  animation: dot-pulse 1.4s ease-in-out infinite;
+}
+
+.status-cell .sep {
+  color: var(--brass-deep);
+}
+
+/* ============================================================
+   RESPONSIVE — mobile 375×812 stack vertically
+   ============================================================ */
+@media (max-width: 820px) {
+  body { overflow: auto; }
+  .app { height: auto; min-height: 100vh; }
+
+  .header {
+    height: auto;
+    padding: 10px 14px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .header::after { left: 10%; width: 80%; }
+  .logo-text .title { font-size: 16px; }
+  .logo-text .subtitle { font-size: 8px; }
+  .readouts { display: none; }
+  .on-air { padding: 4px 10px; }
+
+  .main { flex-direction: column; overflow: visible; }
+
+  .left-panel {
+    width: 100%;
+    border-right: none;
+    border-bottom: var(--border-brass);
+    padding: 14px 14px 12px;
+    box-shadow: inset 0 -8px 18px rgba(0,0,0,0.35);
+  }
+
+  .right-panel {
+    flex: 1;
+    min-height: 60vh;
+  }
+
+  .chat-stream { padding: 14px 14px 20px; }
+
+  .status-bar {
+    height: auto;
+    flex-wrap: wrap;
+    padding: 6px 10px;
+    gap: 4px;
+  }
+  .status-cell {
+    padding: 4px 10px;
+    border-right: none;
+    border-bottom: 1px solid var(--brass-deep);
+  }
+  .status-cell:last-child { margin-left: 0; border-bottom: none; }
+
+  .controls-row { flex-direction: row; }
+  .test-btn { width: auto; flex: 0 0 auto; }
+}
+
+@media (max-width: 420px) {
+  .controls-row { flex-direction: column; }
+  .test-btn { width: 100%; }
+  .msg { max-width: 92%; }
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ==================== HEADER ==================== -->
+  <header class="header">
+    <div class="logo-block">
+      <div class="logo-mark" aria-label="XEngineer logo">X</div>
+      <div class="logo-text">
+        <span class="title">XEngineer</span>
+        <span class="subtitle">AI Vision Conversation Assistant</span>
+      </div>
+    </div>
+    <div class="header-spacer"></div>
+
+    <!-- Signature #5: ON AIR host red light -->
+    <div class="on-air" title="AI 正在收听">
+      <div class="on-air-dot"></div>
+      <span class="on-air-label">ON&nbsp;AIR</span>
+    </div>
+
+    <!-- Header readouts -->
+    <div class="readouts">
+      <div class="readout"><span class="dot"></span><span>WS·LIVE</span></div>
+      <div class="readout"><span class="dot amber"></span><span>24kHz</span></div>
+      <div class="readout"><span class="dot velvet"></span><span>REC</span></div>
+    </div>
+  </header>
+
+  <!-- ==================== MAIN ==================== -->
+  <main class="main">
+
+    <!-- ---------- LEFT PANEL ---------- -->
+    <aside class="left-panel">
+
+      <div class="section-label"><span class="label-text">CAMERA · CH-1</span></div>
+
+      <!-- Signature #3: Camera as vintage TV frame -->
+      <div class="tv-frame">
+        <div class="tv-screen">
+          <div class="tv-static"></div>
+          <div class="tv-content">
+            <span class="ch-marker">CH-01</span>
+            <span class="rec-marker"><span class="blink-dot"></span>REC</span>
+            <div class="glyph">SIGNAL</div>
+            <div class="freq">108.7 MHz · STEREO</div>
+            <div style="margin-top:14px; font-size:9px; opacity:0.6; letter-spacing:0.18em;">CAMERA STANDBY</div>
+          </div>
+        </div>
+        <div class="tv-knobs">
+          <div class="knob" title="brightness"></div>
+          <div class="knob" title="contrast"></div>
+          <div class="knob" title="volume"></div>
+          <div class="knob" title="channel"></div>
+        </div>
+      </div>
+
+      <div class="section-label"><span class="label-text">VU METER · PROGRAM</span></div>
+
+      <!-- Signature #2: VU meter with sweeping needle -->
+      <div class="vu-block">
+        <div class="vu-block-header">
+          <span>INPUT LEVEL · L+R</span>
+          <span class="vu-reading">PEAK · −6 dB</span>
+        </div>
+        <div class="vu-svg-wrap">
+          <svg class="vu-svg" viewBox="0 0 220 122" xmlns="http://www.w3.org/2000/svg" aria-label="VU meter">
+            <defs>
+              <!-- VU gradient sector (yellow-green-amber-red) -->
+              <linearGradient id="vuArc" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%"   stop-color="#4ade80" stop-opacity="0.22"/>
+                <stop offset="55%"  stop-color="#a3e635" stop-opacity="0.28"/>
+                <stop offset="72%"  stop-color="#fbbf24" stop-opacity="0.4"/>
+                <stop offset="88%"  stop-color="#ef4444" stop-opacity="0.55"/>
+                <stop offset="100%" stop-color="#7f1d1d" stop-opacity="0.7"/>
+              </linearGradient>
+              <radialGradient id="pivotGrad" cx="35%" cy="35%" r="65%">
+                <stop offset="0%" stop-color="#d4b078"/>
+                <stop offset="60%" stop-color="#b08d57"/>
+                <stop offset="100%" stop-color="#5c4a2d"/>
+              </radialGradient>
+            </defs>
+
+            <!-- Outer brass bezel -->
+            <path d="M 10 112 A 100 100 0 0 1 210 112"
+                  fill="#0a0606" stroke="#b08d57" stroke-width="3"
+                  stroke-linecap="round"/>
+
+            <!-- Inner gradient sector (yellow-green sweep) -->
+            <path d="M 22 112 A 88 88 0 0 1 198 112 Z" fill="url(#vuArc)"/>
+
+            <!-- Inner black dial background -->
+            <path d="M 26 112 A 84 84 0 0 1 194 112 Z" fill="#070403" opacity="0.55"/>
+
+            <!-- Scale arc outline -->
+            <path d="M 30 112 A 80 80 0 0 1 190 112"
+                  fill="none" stroke="#f5e6d3" stroke-width="0.6" opacity="0.7"/>
+
+            <!-- Tick marks: major every 15°, minor every 5°, from -75° to +75° -->
+            <g stroke="#f5e6d3" stroke-linecap="round">
+              <!-- Major ticks: 11 ticks at 15° steps -->
+              <!-- -75° -->
+              <line x1="33.5" y1="91.2" x2="38.0" y2="92.6" stroke-width="1.4"/>
+              <!-- -60° -->
+              <line x1="40.0" y1="72.0" x2="44.0" y2="74.0" stroke-width="1.4"/>
+              <!-- -45° -->
+              <line x1="43.4" y1="55.7" x2="46.6" y2="58.9" stroke-width="1.4"/>
+              <!-- -30° -->
+              <line x1="44.7" y1="42.6" x2="46.6" y2="46.6" stroke-width="1.4"/>
+              <!-- -15° -->
+              <line x1="45.3" y1="32.7" x2="45.3" y2="37.3" stroke-width="1.4"/>
+              <!-- 0° (top) -->
+              <line x1="100" y1="26" x2="100" y2="32" stroke-width="1.8" stroke="#fbbf24"/>
+              <!-- 15° -->
+              <line x1="154.7" y1="32.7" x2="154.7" y2="37.3" stroke-width="1.4"/>
+              <!-- 30° -->
+              <line x1="155.3" y1="42.6" x2="153.4" y2="46.6" stroke-width="1.4"/>
+              <!-- 45° -->
+              <line x1="156.6" y1="55.7" x2="153.4" y2="58.9" stroke-width="1.4"/>
+              <!-- 60° -->
+              <line x1="160.0" y1="72.0" x2="156.0" y2="74.0" stroke-width="1.4"/>
+              <!-- 75° -->
+              <line x1="166.5" y1="91.2" x2="162.0" y2="92.6" stroke-width="1.4"/>
+            </g>
+
+            <!-- Minor ticks at every 5° between majors -->
+            <g stroke="#f5e6d3" stroke-width="0.7" opacity="0.8">
+              <!-- generated minor ticks -70,-65,-55,-50,-40,-35,-25,-20,-10,-5,5,10,20,25,35,40,50,55,65,70 -->
+              <line x1="35.0" y1="84.7" x2="38.2" y2="85.7"/>
+              <line x1="37.2" y1="77.5" x2="40.2" y2="78.9"/>
+              <line x1="41.4" y1="66.0" x2="44.0" y2="68.0"/>
+              <line x1="44.0" y1="60.0" x2="46.4" y2="62.4"/>
+              <line x1="45.0" y1="49.5" x2="46.6" y2="52.5"/>
+              <line x1="45.0" y1="44.0" x2="46.0" y2="47.0"/>
+              <line x1="46.0" y1="34.5" x2="45.6" y2="37.7"/>
+              <line x1="47.5" y1="29.5" x2="46.7" y2="32.6"/>
+              <line x1="56.0" y1="24.5" x2="54.8" y2="27.4"/>
+              <line x1="65.5" y1="22.0" x2="64.4" y2="24.9"/>
+              <line x1="79.7" y1="20.4" x2="79.2" y2="23.6"/>
+              <line x1="120.3" y1="20.4" x2="120.8" y2="23.6"/>
+              <line x1="134.5" y1="22.0" x2="135.6" y2="24.9"/>
+              <line x1="144.0" y1="24.5" x2="145.2" y2="27.4"/>
+              <line x1="153.5" y1="29.5" x2="153.3" y2="32.6"/>
+              <line x1="155.0" y1="34.5" x2="154.4" y2="37.7"/>
+              <line x1="155.0" y1="44.0" x2="154.0" y2="47.0"/>
+              <line x1="155.0" y1="49.5" x2="153.4" y2="52.5"/>
+              <line x1="156.0" y1="60.0" x2="153.6" y2="62.4"/>
+              <line x1="158.6" y1="66.0" x2="156.0" y2="68.0"/>
+              <line x1="162.8" y1="77.5" x2="159.8" y2="78.9"/>
+              <line x1="165.0" y1="84.7" x2="161.8" y2="85.7"/>
+            </g>
+
+            <!-- Scale labels -->
+            <g font-family="JetBrains Mono, monospace" font-size="6" fill="#f5e6d3" opacity="0.85" text-anchor="middle">
+              <text x="36" y="84">-20</text>
+              <text x="48" y="56">-10</text>
+              <text x="68" y="36">-5</text>
+              <text x="100" y="24" fill="#fbbf24" font-weight="700">0</text>
+              <text x="152" y="36">+3</text>
+              <text x="172" y="56">+6</text>
+              <text x="184" y="84">+10</text>
+            </g>
+
+            <!-- VU label -->
+            <text x="100" y="76" font-family="Playfair Display, serif" font-size="10"
+                  font-weight="700" fill="#b08d57" text-anchor="middle" letter-spacing="0.25em">VU</text>
+            <text x="100" y="86" font-family="JetBrains Mono, monospace" font-size="5"
+                  fill="#8a6f44" text-anchor="middle" letter-spacing="0.2em">PROGRAM · AES</text>
+
+            <!-- Needle: rotated by SVG animateTransform -->
+            <g>
+              <line x1="100" y1="112" x2="100" y2="30"
+                    stroke="#4ade80" stroke-width="1.8" stroke-linecap="round"
+                    filter="drop-shadow(0 0 3px rgba(74,222,128,0.7))">
+                <animateTransform attributeName="transform" attributeType="XML"
+                  type="rotate"
+                  values="-30 100 112; 28 100 112; -22 100 112; 18 100 112; -28 100 112; 30 100 112; -30 100 112"
+                  keyTimes="0; 0.18; 0.36; 0.55; 0.72; 0.88; 1"
+                  dur="1s" repeatCount="indefinite"
+                  calcMode="spline"
+                  keySplines="0.4 0 0.6 1; 0.4 0 0.6 1; 0.4 0 0.6 1; 0.4 0 0.6 1; 0.4 0 0.6 1; 0.4 0 0.6 1"/>
+              </line>
+              <!-- Needle tail (counterweight) -->
+              <line x1="100" y1="112" x2="100" y2="120"
+                    stroke="#4ade80" stroke-width="2.2" stroke-linecap="round" opacity="0.7">
+                <animateTransform attributeName="transform" attributeType="XML"
+                  type="rotate"
+                  values="-30 100 112; 28 100 112; -22 100 112; 18 100 112; -28 100 112; 30 100 112; -30 100 112"
+                  keyTimes="0; 0.18; 0.36; 0.55; 0.72; 0.88; 1"
+                  dur="1s" repeatCount="indefinite"
+                  calcMode="spline"
+                  keySplines="0.4 0 0.6 1; 0.4 0 0.6 1; 0.4 0 0.6 1; 0.4 0 0.6 1; 0.4 0 0.6 1; 0.4 0 0.6 1"/>
+              </line>
+            </g>
+
+            <!-- Pivot -->
+            <circle cx="100" cy="112" r="6" fill="url(#pivotGrad)" stroke="#1a0d08" stroke-width="1"/>
+            <circle cx="100" cy="112" r="2" fill="#1a0d08"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="section-label"><span class="label-text">CHANNEL · STRIP 01</span></div>
+
+      <!-- Signature #1: Physical fader as record button + Test button -->
+      <div class="controls-row">
+        <div class="fader-btn active" role="button" aria-label="录音 (ON AIR)">
+          <div class="fader-track">
+            <div class="fader-handle"></div>
+          </div>
+          <div class="fader-state">
+            <div class="fader-state-row">
+              <div class="rec-light"></div>
+              <span class="state-label">ON&nbsp;AIR</span>
+            </div>
+            <span class="state-sub">STRIP 01 · INPUT</span>
+          </div>
+        </div>
+
+        <button class="test-btn" type="button" aria-label="发送测试消息">
+          <span class="btn-icon">◉</span>
+          <span>测试消息</span>
+          <span class="btn-sub">CUE</span>
+        </button>
+      </div>
+
+    </aside>
+
+    <!-- ---------- RIGHT PANEL ---------- -->
+    <section class="right-panel">
+      <div class="chat-header">
+        <div class="chat-title">
+          <span class="tape-icon"></span>
+          <span>BROADCAST LOG</span>
+        </div>
+        <div class="chat-meta">
+          <span><span class="dot"></span>LIVE</span>
+          <span>SR·24kHz</span>
+          <span>SESSION 0xA7E2</span>
+        </div>
+      </div>
+
+      <div class="chat-stream">
+
+        <div class="session-divider">
+          <span>1972-06-17 · SESSION START · 19:42:08</span>
+        </div>
+
+        <!-- USER message 1 -->
+        <div class="msg msg-user" style="animation-delay: 0.05s">
+          <div class="msg-meta">
+            <span class="role">USER</span>
+            <span class="time">19:42:15</span>
+          </div>
+          <div class="msg-bubble">
+            你好，你能看到我吗？
+          </div>
+        </div>
+
+        <!-- AI message (streaming, with cursor) -->
+        <div class="msg msg-ai" style="animation-delay: 0.15s">
+          <div class="msg-meta">
+            <span class="role">AI · HOST</span>
+            <span class="time">19:42:18</span>
+          </div>
+          <div class="msg-bubble">
+            是的，我能看到你。你戴着一副金属半框眼镜，身穿深蓝色 T 恤，背景里有一盏暖色台灯，右侧墙上挂着一幅黑白色调的城市照片<span class="cursor"></span>
+          </div>
+        </div>
+
+        <!-- SYS message -->
+        <div class="msg msg-sys" style="animation-delay: 0.25s">
+          <div class="msg-meta">
+            <span class="role">SYS</span>
+            <span class="time">19:42:22</span>
+          </div>
+          <div class="sys-line">
+            <span class="sys-text">▸ 摄像头已开启 · CH-01 · 640×480 · 24fps</span>
+          </div>
+        </div>
+
+        <!-- USER message 2 -->
+        <div class="msg msg-user" style="animation-delay: 0.35s">
+          <div class="msg-meta">
+            <span class="role">USER</span>
+            <span class="time">19:42:31</span>
+          </div>
+          <div class="msg-bubble">
+            好的，那你能听到我说话吗？
+          </div>
+        </div>
+
+        <!-- SYS echo -->
+        <div class="msg msg-sys" style="animation-delay: 0.45s">
+          <div class="msg-meta">
+            <span class="role">SYS</span>
+            <span class="time">19:42:33</span>
+          </div>
+          <div class="sys-line">
+            <span class="sys-text">▸ 音频链路就绪 · INPUT 16kHz · MONO · AGC ON</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================== STATUS BAR ==================== -->
+  <footer class="status-bar">
+    <div class="status-cell">
+      <span class="label">WS</span>
+      <span class="sep">:</span>
+      <span class="value green">CONNECTED</span>
+    </div>
+    <div class="status-cell">
+      <span class="label">VU</span>
+      <span class="sep">:</span>
+      <span class="value amber">−12&nbsp;dB</span>
+    </div>
+    <div class="status-cell">
+      <span class="label">MODE</span>
+      <span class="sep">:</span>
+      <span class="value velvet">ON&nbsp;AIR</span>
+    </div>
+    <div class="status-cell">
+      <span class="label">SR</span>
+      <span class="sep">:</span>
+      <span class="value">24&nbsp;kHz</span>
+    </div>
+    <div class="status-cell">
+      <span class="label">ENC</span>
+      <span class="sep">:</span>
+      <span class="value">PCM·16</span>
+    </div>
+    <div class="status-cell">
+      <span class="label">XENGR</span>
+      <span class="sep">:</span>
+      <span class="value">v0.1.0</span>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>
