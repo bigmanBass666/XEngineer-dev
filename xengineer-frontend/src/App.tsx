@@ -8,9 +8,11 @@ import { Camera } from './components/Camera'
 import { useState, useCallback, useRef, useEffect } from 'react'
 import type { ServerMessage, ChatMessage, VADStatus } from './lib/protocol'
 import type { VADState } from './lib/vad'
+import { useAudioSession } from './hooks/useAudioSession'
 
 function App() {
   const { status, send, onMessage } = useWebSocket()
+  const { handleTTSPlay, handleTTSStop } = useAudioSession()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [currentAIResponse, setCurrentAIResponse] = useState('')
   const [isAIProcessing, setIsAIProcessing] = useState(false)
@@ -228,7 +230,10 @@ function App() {
         audioElement={
           <AudioPlayer
             isPlaying={false}
-            onPlayStateChange={() => {}}
+            onPlayStateChange={(playing: boolean) => {
+              if (playing) handleTTSPlay()
+              else handleTTSStop()
+            }}
           />
         }
       />
