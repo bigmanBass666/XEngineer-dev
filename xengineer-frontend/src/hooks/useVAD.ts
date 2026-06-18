@@ -34,11 +34,15 @@ export function useVAD(options: UseVADOptions = {}) {
     try {
       setError(null)
 
+      // Android: echoCancellation=false 阻止 Chrome 进入 MODE_IN_COMMUNICATION
+      // 参考: Chromium issue 40866811 (Chrome 工程师确认)
+      // iOS: echoCancellation=true 保持默认行为
+      const isAndroid = /android/i.test(navigator.userAgent)
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           sampleRate: sampleRate,
           channelCount: 1,
-          echoCancellation: true,
+          echoCancellation: !isAndroid,
           noiseSuppression: true,
         }
       })
