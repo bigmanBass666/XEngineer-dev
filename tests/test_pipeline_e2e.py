@@ -271,7 +271,7 @@ async def run_single_utterance(ws, utterance: dict, image_base64: str, results: 
 
     # Step 1: VAD 开始说话（triggers ASR session start + camera snapshot）
     await ws.send(json.dumps({"type": "vad_status", "speaking": True}))
-    await asyncio.sleep(0.5)  # Brief wait for ASR session to initialize
+    await asyncio.sleep(2.0)  # Wait for ASR session to initialize (backend may take 1-2s)
     session_started = any(
         m.get("type") == "status" and "asr_session_started" in m.get("message", "")
         for m in session_msgs
@@ -301,7 +301,7 @@ async def run_single_utterance(ws, utterance: dict, image_base64: str, results: 
     print(f"    {n_chunks + (1 if remaining else 0)} 个音频分片已发送 (每片 {chunk_size} bytes @32ms)")
 
     # Brief pause after audio to let last chunks process
-    await asyncio.sleep(0.5)
+    await asyncio.sleep(1.0)  # Allow last audio chunks to be processed
 
     # Step 4: VAD 停止说话（triggers ASR final recognition → VLM → TTS）
     await ws.send(json.dumps({"type": "vad_status", "speaking": False}))
@@ -442,10 +442,14 @@ async def run_pipeline_test():
     # 逐条执行测试语句
     all_session_msgs = []
     for utt in TEST_UTTERANCES:
+        # Health check: verify WebSocket is still connected
+        if ws.state.name != "OPEN":
+            results.fail(f"WebSocket 断开", f"在语句 #{utt['id']} 前检测到连接已关闭 (state={ws.state.name})")
+            break
         session_msgs = await run_single_utterance(ws, utt, image_base64, results)
         all_session_msgs.extend(session_msgs)
         # 会话间隔，避免后端状态污染
-        await asyncio.sleep(2)
+        await asyncio.sleep(3)  # Longer gap to allow backend state cleanup
 
     # 保存完整日志
     log_dir = Path(__file__).resolve().parent.parent / "download"
